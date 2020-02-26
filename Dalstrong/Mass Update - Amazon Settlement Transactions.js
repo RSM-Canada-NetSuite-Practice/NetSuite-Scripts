@@ -60,17 +60,19 @@ customrecord_celigo_amzio_settle_transSearchObj.run().each(function(result){
 
     var cus_rec_celigo_amzio_settle = record.load({id:cus_rec_celigo_amzio_settle_internalid})
 
-		var cus_rec_celigo_amzio_settle = record.setValue({
+	  cus_rec_celigo_amzio_settle.setValue({
       fieldId:custrecord_celigo_amzio_set_exp_to_io,
-      value:"False",
+      value:"F"
+
+      }",
 		});
 
-    var cus_rec_celigo_amzio_settle = record.setValue({
+    cus_rec_celigo_amzio_settle.setValue({
       fieldId:custrecord_celigo_amzio_set_recon_status,
-      value:"New",
+      value:"6",
     });
 
-    return record.save;
+    cus_rec_celigo_amzio_settle.save;
 
     }
 
