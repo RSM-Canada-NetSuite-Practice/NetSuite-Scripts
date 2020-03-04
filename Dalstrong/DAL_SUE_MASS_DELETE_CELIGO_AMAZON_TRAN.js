@@ -4,7 +4,7 @@
  * Name: DAL_SUE_MASS_DELETE_CELIGO_AMAZON_TRAN.js
  * @NScriptType MapReduceScript
  * @NApiVersion 2.x
- * Version: 0.0.1
+ * Version: 0.0.2
  *
  *
  * Author: Nicolas Bean
@@ -24,7 +24,7 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
       filters: [
         ["custrecord_celigo_amzio_set_amz_account", "anyof", "103"],
         "AND",
-        ["custrecord_celigo_amzio_set_settlemnt_id", "startswith", "12460042831"]
+        ["custrecord_celigo_amzio_set_settlemnt_id", "startswith", "12460042831"],
       ],
       columns: [
         search.createColumn({
@@ -97,12 +97,12 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
       ]
     });
 
-    var searchResultCount = customrecord_celigo_amzio_settle_transSearchObj.runPaged().count;
-    log.debug("customrecord_celigo_amzio_settle_transSearchObj result count", searchResultCount);
-    customrecord_celigo_amzio_settle_transSearchObj.run().each(function(result) {
+    //var searchResultCount = customrecord_celigo_amzio_settle_transSearchObj.runPaged().count;
+    //log.debug("customrecord_celigo_amzio_settle_transSearchObj result count", searchResultCount);
+    //customrecord_celigo_amzio_settle_transSearchObj.run().each(function(result) {
       // .run().each has a limit of 4,000 results
-      return true;
-    });
+    //  return true;
+    //});
 
     var res = customrecord_celigo_amzio_settle_transSearchObj.run().getRange(0, 100);
     log.debug('getInputData', res.length + ' ' + JSON.stringify(res));
@@ -116,68 +116,64 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
 
     var res = JSON.parse(context.value);
 
-    var cus_rec_celigo_amzio_settle_internalid = res.values['internalid'].value;
+    var cus_rec_celigo_amzio_settle_internalid = res.id;
 
     log.debug('The Settlement Transaction internal ID is: ', cus_rec_celigo_amzio_settle_internalid);
 
-    var recCurrent = record.load({
-      type: 'customrecord_celigo_amzio_settle_trans',
-      id: cus_rec_celigo_amzio_settle_internalid,
-      isDynamic: true,
-    });
+    var cus_rec_celigo_amzio_settle_internalid_price = res.values['internalid.CUSTRECORD_CELIGO_AMZIO_SET_IP_PAR_TRANS'].value;
 
-    var numLinesFees = recCurrent.getLineCount({
-      sublistId: 'recmachcustomrecord_celigo_amzio_sett_fee',
-    });
+    log.debug('The Settlement Price internal ID is: ', cus_rec_celigo_amzio_settle_internalid_price);
 
-    log.debug('The number of settlement fee lines on this transaction is: ', numLinesFees);
+    var cus_rec_celigo_amzio_settle_internalid_fees = res.values['internalid.CUSTRECORD_CELIGO_AMZIO_SET_F_PAR_TRANS'].value;
 
-    for (var i = 0; i < numLinesFees; i++) {
+    log.debug('The Settlement Fee internal ID is: ', cus_rec_celigo_amzio_settle_internalid_fees);
 
-      var transactionFees = recCurrent.getSublistValue({
-        sublistId: 'recmachcustomrecord_celigo_amzio_sett_fee',
-        fieldId: 'internalid',
-        line: i
-      });
-
-      log.debug('The internal id of the transaction fee is: ', transactionFees);
+    try {
 
       var transactionFeesDeleted = record.delete({
-        type: 'customrecord_celigo_amzio_sett_fee',
-        id: transactionFees,
-      });
+          type: 'customrecord_celigo_amzio_sett_fee',
+          id: cus_rec_celigo_amzio_settle_internalid_fees,
+        });
+
+    } catch (e) {
+
+      log.debug('Error reads: ', e.name + e.message);
 
     }
 
-    var numLinesPrice = recCurrent.getLineCount({
-      sublistId: 'recmachcustomrecord_celigo_amzio_set_item_price',
-    });
-
-    for (var f = 0; i < numLinesPrice; f++) {
-
-      var transactionPrices = recCurrent.getSublistValue({
-        sublistId: 'recmachcustomrecord_celigo_amzio_set_item_price',
-        fieldId: 'internalid',
-        line: f
-      });
-
-      log.debug('The internal id of the transaction price is: ', transactionPrices);
+    try {
 
       var transactionPricesDeleted = record.delete({
-        type: 'customrecord_celigo_amzio_set_item_price',
-        id: transactionPrices,
-      });
+          type: 'customrecord_celigo_amzio_set_item_price',
+          id: cus_rec_celigo_amzio_settle_internalid_price,
+        });
+
+    } catch (e) {
+
+      log.debug('Error reads: ', e.name + e.message);
 
     }
 
-    var cus_rec_celigo_amzio_settle = record.delete({
-      type: 'customrecord_celigo_amzio_settle_trans',
-      id: cus_rec_celigo_amzio_settle_internalid,
-    });
+    context.write(cus_rec_celigo_amzio_settle_internalid);
 
   }
 
   function reduce(context) {
+
+    var cus_rec_celigo_amzio_settlement_reduce_internalid = context.key;
+
+    try {
+
+      var transactionSettlement = record.delete({
+          type: 'customrecord_celigo_amzio_settle_trans',
+          id: cus_rec_celigo_amzio_settlement_reduce_internalid,
+        });
+
+    } catch (e) {
+
+      log.debug('Error reads: ', e.name + e.message);
+
+    }
 
     log.debug('Reduce');
 
