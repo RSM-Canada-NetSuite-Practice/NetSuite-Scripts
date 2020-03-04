@@ -97,25 +97,6 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
       ]
     });
 
-    function getAllResults(s) {
-      var results = s.run();
-      var searchResults = [];
-      var searchid = 0;
-      do {
-        var resultslice = results.getRange({
-          start: searchid,
-          end: searchid + 1000
-        });
-        resultslice.forEach(function(slice) {
-          searchResults.push(slice);
-          searchid++;
-        });
-      } while (resultslice.length >= 1000);
-      return searchResults;
-    }
-
-    var searchResultCount = getAllResults(customrecord_celigo_amzio_settle_transSearchObj);
-
     var searchResultCount = customrecord_celigo_amzio_settle_transSearchObj.runPaged().count;
     log.debug("customrecord_celigo_amzio_settle_transSearchObj result count", searchResultCount);
     customrecord_celigo_amzio_settle_transSearchObj.run().each(function(result) {
