@@ -74,12 +74,12 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
         })
       ]
     });
-    //var searchResultCount = customrecord_celigo_amzio_settle_transSearchObj.runPaged().count;
-    //log.debug("customrecord_celigo_amzio_settle_transSearchObj result count", searchResultCount);
-    //customrecord_celigo_amzio_settle_transSearchObj.run().each(function(result) {
-    // .run().each has a limit of 4,000 results
-    //  return true;
-    //});
+    // var searchResultCount = customrecord_celigo_amzio_settle_transSearchObj.runPaged().count;
+    // log.debug("customrecord_celigo_amzio_settle_transSearchObj result count", searchResultCount);
+    // customrecord_celigo_amzio_settle_transSearchObj.run().each(function(result) {
+    //   // .run().each has a limit of 4,000 results
+    //   return true;
+    // });
 
     var res = customrecord_celigo_amzio_settle_transSearchObj.run().getRange(0, 100);
     log.debug('getInputData', res.length + ' ' + JSON.stringify(res));
@@ -97,9 +97,9 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
 
     log.debug('The Settlement Transaction internal ID is: ', cus_rec_celigo_amzio_settle_internalid);
 
-    var cus_rec_celigo_amzio_settle_merchant_order_id = res.custrecord_celigo_amzio_set_mer_order_id.substring(1, 5);
+    var cus_rec_celigo_amzio_settle_merchant_order_id = res.values.custrecord_celigo_amzio_set_mer_order_id.substring(1, 6);
 
-    log.debug('The Settlement Merchant Order ID is: ', cus_rec_celigo_amzio_settle_internalid_price);
+    log.debug('The Settlement Merchant Order ID is: ', cus_rec_celigo_amzio_settle_merchant_order_id);
 
     var cashsaleSearchObj = search.create({
       type: "cashsale",
@@ -108,7 +108,7 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
         "AND",
         ["mainline", "is", "T"],
         "AND",
-        ["poastext", "startswith", "cus_rec_celigo_amzio_settle_merchant_order_id"]
+        ["poastext", "is", cus_rec_celigo_amzio_settle_merchant_order_id]
       ],
       columns: [
         search.createColumn({
@@ -125,70 +125,60 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
         })
       ]
     });
-    //var searchResultCount = cashsaleSearchObj.runPaged().count;
-    //log.debug("cashsaleSearchObj result count", searchResultCount);
-    //cashsaleSearchObj.run().each(function(result) {
-    // .run().each has a limit of 4,000 results
-    //  return true;
-    //});
 
-    var recCashSale = cashsaleSearchObj.run().getRange(0, 100);
-    log.debug('map', res.length + ' ' + JSON.stringify(recCashSale));
-    return cashsaleSearchObj;
+    var cashSaleResults = cashsaleSearchObj.run().getRange(0, 100);
+    log.debug('Cash Sale Search', cashSaleResults.length + ' ' + JSON.stringify(cashSaleResults));
 
-    var cus_rec_cash_sale_internal_id = recCashSale.id;
+    var cus_rec_cash_sale_internal_id = cashSaleResults[0].id;
 
-    log.debug('The Cash Sale internal ID is: ', cus_rec_cash_sale_internal_id);
+    log.debug('The Cash Sale Internal ID is: ', cus_rec_cash_sale_internal_id);
 
-    //   try {
+    // var cashSaleRec = record.load({type: 'cashsale', id: cus_rec_cash_sale_internal_id});
     //
-    //     var transactionFeesDeleted = record.delete({
-    //       type: 'customrecord_celigo_amzio_sett_fee',
-    //       id: cus_rec_celigo_amzio_settle_internalid_fees,
-    //     });
+    // log.debug('The Cash Sale has been successfully loaded: ', cus_rec_cash_sale_internal_id);
     //
-    //   } catch (e) {
+    // cashSaleRec.setValue({fieldId:custbodyrsm_celigo_sett_tran,value:cus_rec_celigo_amzio_settle_internalid});
     //
-    //     log.debug('Error reads: ', e.name + e.message);
-    //
-    //   }
-    //
-    //   try {
-    //
-    //     var transactionPricesDeleted = record.delete({
-    //       type: 'customrecord_celigo_amzio_set_item_price',
-    //       id: cus_rec_celigo_amzio_settle_internalid_price,
-    //     });
-    //
-    //   } catch (e) {
-    //
-    //     log.debug('Error reads: ', e.name + e.message);
-    //
-    //   }
-    //
-    //   context.write(cus_rec_celigo_amzio_settle_internalid);
-    //
+    // cashSaleRec.save();
+
+    // log.debug('The Cash Sale has been successfully saved with Settlement Transaction: ', cus_rec_celigo_amzio_settle_internalid);
+
+    var amzioSettleTran = record.load({type: 'customrecord_celigo_amzio_settle_trans', id: cus_rec_celigo_amzio_settle_internalid});
+
+    log.debug('The Settlement Transaction has been successfully loaded: ', cus_rec_celigo_amzio_settle_internalid);
+
+    amzioSettleTran.setValue({fieldId:custrecord_celigo_amzio_set_parent_tran,value:cus_rec_cash_sale_internal_id});
+    amzioSettleTran.setValue({fieldId:custrecord_celigo_amzio_set_trans_to_rec,value:cus_rec_cash_sale_internal_id});
+    amzioSettleTran.setValue({fieldId:custrecord_celigo_amzio_set_recond_trans,value:cus_rec_cash_sale_internal_id});
+    amzioSettleTran.setValue({fieldId:custrecord_celigo_amzio_set_exp_to_io,value: true});
+    amzioSettleTran.setValue({fieldId:custrecord_celigo_amzio_set_recon_status,value: '5'});
+
+    amzioSettleTran.save();
+
+    log.debug('The Settlement Transaction has been successfully saved with Cash Sale Transaction: ', cus_rec_cash_sale_internal_id);
+
+
   }
 
   function reduce(context) {
 
-  //   var cus_rec_celigo_amzio_settlement_reduce_internalid = context.key;
-  //
-  //   try {
-  //
-  //     var transactionSettlement = record.delete({
-  //       type: 'customrecord_celigo_amzio_settle_trans',
-  //       id: cus_rec_celigo_amzio_settlement_reduce_internalid,
-  //     });
-  //
-  //   } catch (e) {
-  //
-  //     log.debug('Error reads: ', e.name + e.message);
-  //
-  //   }
-  //
-  //   log.debug('Reduce');
-  //
+    //   var cus_rec_celigo_amzio_settlement_reduce_internalid = context.key;
+    //
+    //   try {
+    //
+    //     var transactionSettlement = record.delete({
+    //       type: 'customrecord_celigo_amzio_settle_trans',
+    //       id: cus_rec_celigo_amzio_settlement_reduce_internalid,
+    //     });
+    //
+    //   } catch (e) {
+    //
+    //     log.debug('Error reads: ', e.name + e.message);
+    //
+    //   }
+    //
+    //   log.debug('Reduce');
+    //
   }
 
   function summarize(context) {
