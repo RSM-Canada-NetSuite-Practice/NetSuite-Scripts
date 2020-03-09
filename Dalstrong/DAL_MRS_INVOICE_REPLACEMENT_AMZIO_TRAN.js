@@ -22,15 +22,17 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
     var customrecord_celigo_amzio_settle_transSearchObj = search.create({
       type: "customrecord_celigo_amzio_settle_trans",
       filters: [
-        ["custrecord_celigo_amzio_set_recond_trans", "anyof", "@NONE@"],
-        "AND",
-        ["custrecordrsm_marketplace_cus_tran_settl", "anyof", "15"]
+        ["custrecord_celigo_amzio_set_mer_order_id", "contains", "CONSUMER"]
       ],
       columns: [
         search.createColumn({
           name: "name",
           sort: search.Sort.ASC,
           label: "Name"
+        }),
+        search.createColumn({
+          name: "custrecord_celigo_amzio_set_posted_date",
+          label: "Posted Date"
         }),
         search.createColumn({
           name: "custrecord_celigo_amzio_set_tran_type",
@@ -67,19 +69,15 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
         search.createColumn({
           name: "custrecord_celigo_amzio_set_tran_amount",
           label: "Transaction Amount"
-        }),
-        search.createColumn({
-          name: "custrecord_celigo_amzio_set_recond_trans",
-          label: "NetSuite Transaction (Applied)"
         })
       ]
     });
-    // var searchResultCount = customrecord_celigo_amzio_settle_transSearchObj.runPaged().count;
-    // log.debug("customrecord_celigo_amzio_settle_transSearchObj result count", searchResultCount);
-    // customrecord_celigo_amzio_settle_transSearchObj.run().each(function(result) {
-    //   // .run().each has a limit of 4,000 results
-    //   return true;
-    // });
+    //var searchResultCount = customrecord_celigo_amzio_settle_transSearchObj.runPaged().count;
+    //log.debug("customrecord_celigo_amzio_settle_transSearchObj result count", searchResultCount);
+    //customrecord_celigo_amzio_settle_transSearchObj.run().each(function(result) {
+    // .run().each has a limit of 4,000 results
+    //  return true;
+    //});
 
     var res = customrecord_celigo_amzio_settle_transSearchObj.run().getRange(0, 100);
     log.debug('getInputData', res.length + ' ' + JSON.stringify(res));
@@ -94,26 +92,82 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
     var res = JSON.parse(context.value);
 
     var cus_rec_celigo_amzio_settle_internalid = res.id;
-
     log.debug('The Settlement Transaction internal ID is: ', cus_rec_celigo_amzio_settle_internalid);
 
-    var cus_rec_celigo_amzio_settle_merchant_order_id = res.values.custrecord_celigo_amzio_set_mer_order_id.substring(1, 6);
+    var cus_rec_celigo_amzio_settle_order_id = res.values.custrecord_celigo_amzio_set_order_id;
+    log.debug('The Settlement Order ID is: ', cus_rec_celigo_amzio_settle_order_id);
 
-    log.debug('The Settlement Merchant Order ID is: ', cus_rec_celigo_amzio_settle_merchant_order_id);
+    var cus_rec_celigo_amzio_posted_date = res.values.custrecord_celigo_amzio_set_posted_date;
+    log.debug('The Settlement Posted Date is: ', cus_rec_celigo_amzio_posted_date);
 
-    var cashsaleSearchObj = search.create({
-      type: "cashsale",
+    var amzioSettleTran = record.load({
+      type: 'customrecord_celigo_amzio_settle_trans',
+      id: cus_rec_celigo_amzio_settle_internalid
+    });
+
+    log.debug('The Settlement Transaction has been successfully loaded: ', cus_rec_celigo_amzio_settle_internalid);
+
+    var amzioLineItemCount = amzioSettleTran.getLineCount({
+      sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans'
+    });
+
+    log.debug('The Settlement Transaction line count is: ', amzioLineItemCount);
+
+    var amzioSettleTranSKU = [];
+    var amzioSettleTranOrderID = [];
+    var amzioSettleTranQty = [];
+    var amzioSettleTranAmt = [];
+
+    for (var i = 0; i < amzioLineItemCount; i++) {
+
+      amzioSettleTran.selectNewLine('recmachcustrecord_celigo_amzio_set_ip_par_trans');
+      amzioSettleTranSKU[i].push(amzioSettleTran.getCurrentSublistValue({
+        sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
+        fieldId: custrecord_celigo_amzio_set_ip_ord_sku
+      }));
+      amzioSettleTranSKU[i].push(amzioSettleTran.getCurrentSublistValue({
+        sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
+        fieldId: custrecord_celigo_amzio_set_ip_ord_sku
+      }));
+      amzioSettleTranOrderID[i].push(amzioSettleTran.getCurrentSublistValue({
+        sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
+        fieldId: custrecord_celigo_amzio_set_ip_or_it_id
+      }));
+      amzioSettleTranQty[i].push(amzioSettleTran.getCurrentSublistValue({
+        sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
+        fieldId: custrecord_celigo_amzio_set_ip_quantity
+      }));
+      amzioSettleTranAmt[i].push(amzioSettleTran.getCurrentSublistValue({
+        sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
+        fieldId: custrecord_celigo_amzio_set_ip_principal
+      }));
+
+    }
+
+    amzioSettleTran.save();
+
+
+    var invoiceSearchObj = search.create({
+      type: "invoice",
       filters: [
-        ["type", "anyof", "CashSale"],
+        ["type", "anyof", "CustInvc"],
         "AND",
         ["mainline", "is", "T"],
         "AND",
-        ["poastext", "is", cus_rec_celigo_amzio_settle_merchant_order_id]
+        ["otherrefnum", "equalto", "TBD"]
       ],
       columns: [
         search.createColumn({
-          name: "internalid",
-          label: "Internal ID"
+          name: "trandate",
+          label: "Date"
+        }),
+        search.createColumn({
+          name: "postingperiod",
+          label: "Period"
+        }),
+        search.createColumn({
+          name: "type",
+          label: "Type"
         }),
         search.createColumn({
           name: "tranid",
@@ -122,16 +176,34 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
         search.createColumn({
           name: "otherrefnum",
           label: "PO/Cheque Number"
+        }),
+        search.createColumn({
+          name: "entity",
+          label: "Name"
+        }),
+        search.createColumn({
+          name: "memo",
+          label: "Memo"
+        }),
+        search.createColumn({
+          name: "amount",
+          label: "Amount"
         })
       ]
     });
+    //var searchResultCount = invoiceSearchObj.runPaged().count;
+    //log.debug("invoiceSearchObj result count", searchResultCount);
+    //invoiceSearchObj.run().each(function(result) {
+    // .run().each has a limit of 4,000 results
+    //  return true;
+    //});
 
-    var cashSaleResults = cashsaleSearchObj.run().getRange(0, 100);
-    log.debug('Cash Sale Search', cashSaleResults.length + ' ' + JSON.stringify(cashSaleResults));
+    var invoiceResults = invoiceSearchObj.run().getRange(0, 100);
+    log.debug('Invoice Search', invoiceResults.length + ' ' + JSON.stringify(invoiceResults));
 
-    var cus_rec_cash_sale_internal_id = cashSaleResults[0].id;
+    var cus_rec_invoice_internal_id = invoiceResults[0].id;
 
-    log.debug('The Cash Sale Internal ID is: ', cus_rec_cash_sale_internal_id);
+    log.debug('The Invoice Internal ID is: ', cus_rec_invoice_internal_id);
 
     // var cashSaleRec = record.load({type: 'cashsale', id: cus_rec_cash_sale_internal_id});
     //
@@ -143,15 +215,26 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
 
     // log.debug('The Cash Sale has been successfully saved with Settlement Transaction: ', cus_rec_celigo_amzio_settle_internalid);
 
-    var amzioSettleTran = record.load({type: 'customrecord_celigo_amzio_settle_trans', id: cus_rec_celigo_amzio_settle_internalid});
-
-    log.debug('The Settlement Transaction has been successfully loaded: ', cus_rec_celigo_amzio_settle_internalid);
-
-    amzioSettleTran.setValue({fieldId:'custrecord_celigo_amzio_set_parent_tran',value:cus_rec_cash_sale_internal_id});
-    amzioSettleTran.setValue({fieldId:'custrecord_celigo_amzio_set_trans_to_rec',value:cus_rec_cash_sale_internal_id});
-    amzioSettleTran.setValue({fieldId:'custrecord_celigo_amzio_set_recond_trans',value:cus_rec_cash_sale_internal_id});
-    amzioSettleTran.setValue({fieldId:'custrecord_celigo_amzio_set_exp_to_io',value: true});
-    amzioSettleTran.setValue({fieldId:'custrecord_celigo_amzio_set_recon_status',value: 5});
+    amzioSettleTran.setValue({
+      fieldId: 'custrecord_celigo_amzio_set_parent_tran',
+      value: cus_rec_cash_sale_internal_id
+    });
+    amzioSettleTran.setValue({
+      fieldId: 'custrecord_celigo_amzio_set_trans_to_rec',
+      value: cus_rec_cash_sale_internal_id
+    });
+    amzioSettleTran.setValue({
+      fieldId: 'custrecord_celigo_amzio_set_recond_trans',
+      value: cus_rec_cash_sale_internal_id
+    });
+    amzioSettleTran.setValue({
+      fieldId: 'custrecord_celigo_amzio_set_exp_to_io',
+      value: true
+    });
+    amzioSettleTran.setValue({
+      fieldId: 'custrecord_celigo_amzio_set_recon_status',
+      value: 5
+    });
 
     amzioSettleTran.save();
 
