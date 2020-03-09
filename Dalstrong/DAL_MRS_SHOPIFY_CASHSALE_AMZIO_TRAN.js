@@ -147,11 +147,11 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
 
     log.debug('The Settlement Transaction has been successfully loaded: ', cus_rec_celigo_amzio_settle_internalid);
 
-    amzioSettleTran.setValue({fieldId:custrecord_celigo_amzio_set_parent_tran,value:cus_rec_cash_sale_internal_id});
-    amzioSettleTran.setValue({fieldId:custrecord_celigo_amzio_set_trans_to_rec,value:cus_rec_cash_sale_internal_id});
-    amzioSettleTran.setValue({fieldId:custrecord_celigo_amzio_set_recond_trans,value:cus_rec_cash_sale_internal_id});
-    amzioSettleTran.setValue({fieldId:custrecord_celigo_amzio_set_exp_to_io,value: true});
-    amzioSettleTran.setValue({fieldId:custrecord_celigo_amzio_set_recon_status,value: '5'});
+    amzioSettleTran.setValue({fieldId:'custrecord_celigo_amzio_set_parent_tran',value:cus_rec_cash_sale_internal_id});
+    amzioSettleTran.setValue({fieldId:'custrecord_celigo_amzio_set_trans_to_rec',value:cus_rec_cash_sale_internal_id});
+    amzioSettleTran.setValue({fieldId:'custrecord_celigo_amzio_set_recond_trans',value:cus_rec_cash_sale_internal_id});
+    amzioSettleTran.setValue({fieldId:'custrecord_celigo_amzio_set_exp_to_io',value: true});
+    amzioSettleTran.setValue({fieldId:'custrecord_celigo_amzio_set_recon_status',value: 5});
 
     amzioSettleTran.save();
 
