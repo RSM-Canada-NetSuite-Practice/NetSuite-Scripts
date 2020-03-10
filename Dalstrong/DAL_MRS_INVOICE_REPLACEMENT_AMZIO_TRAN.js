@@ -115,7 +115,7 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
     var cus_rec_celigo_amzio_posted_date = res.values.custrecord_celigo_amzio_set_posted_date;
     log.debug('The Settlement Posted Date is: ', cus_rec_celigo_amzio_posted_date);
 
-    var cus_rec_celigo_amzio_marketplace = res.custrecordrsm_marketplace_cus_tran_settl;
+    var cus_rec_celigo_amzio_marketplace = res.values.custrecordrsm_marketplace_cus_tran_settl.value;
     log.debug('The Settlement Marketplace is: ', cus_rec_celigo_amzio_marketplace);
 
     var amzioSettleTran = record.load({
@@ -131,15 +131,43 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
 
     log.debug('The Settlement Transaction line count is: ', amzioLineItemCount);
 
-    var amzioSettleTranInvoice = {};
+    // var amzioSettleTranInvoice = {
+    //   'date': cus_rec_celigo_amzio_posted_date,
+    //   'customer': marketplaceMap[cus_rec_celigo_amzio_marketplace],
+    //   'marketplace': cus_rec_celigo_amzio_marketplace,
+    //   'ponumber': cus_rec_celigo_amzio_settle_order_id,
+    // };
+
+    var invoiceObj = record.create({
+      type: 'invoice',
+      isDynamic: true,
+    });
+
+    invoiceObj.setValue({
+      fieldId: 'tranDate',
+      value: amzioSettleTranInvoice.date
+    });
+    invoiceObj.setValue({
+      fieldId: 'entity',
+      value: amzioSettleTranInvoice.customer
+    });
+    invoiceObj.setValue({
+      fieldId: 'cseg1',
+      value: amzioSettleTranInvoice.marketplace
+    });
+    invoiceObj.setValue({
+      fieldId: 'otherrefnum',
+      value: amzioSettleTranInvoice.ponumber
+    });
 
     for (var i = 0; i < amzioLineItemCount; i++) {
 
-      amzioSettleTranInvoice[i] = {
-        'date': cus_rec_celigo_amzio_posted_date,
-        'customer': "",
-        'marketplace': cus_rec_celigo_amzio_marketplace,
-        'ponumber': cus_rec_celigo_amzio_settle_order_id,
+      amzioSettleTran.selectLine({
+        sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
+        line: i
+      });
+
+      amzioSettleTranInvoice['items'][i] = {
         'sku': amzioSettleTran.getCurrentSublistValue({
           sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
           fieldId: custrecord_celigo_amzio_set_ip_ord_sku
@@ -156,51 +184,42 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
           sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
           fieldId: custrecord_celigo_amzio_set_ip_or_it_id
         }),
+
       };
 
       log.debug(JSON.stringify(amzioSettleTranInvoice[i]));
 
-      if (amzioSettleTranInvoice[i].marketplace == 2) {
-        amzioSettleTranInvoice[i].customer = '1234';
-      } else if (amzioSettleTranInvoice[i].marketplace == 3) {
-        amzioSettleTranInvoice[i].customer = '1234';
-      } else if (amzioSettleTranInvoice[i].marketplace == 4) {
-        amzioSettleTranInvoice[i].customer = '1234';
-      } else if (amzioSettleTranInvoice[i].marketplace == 6) {
-        amzioSettleTranInvoice[i].customer = '1234';
-      } else if (amzioSettleTranInvoice[i].marketplace == 7) {
-        amzioSettleTranInvoice[i].customer = '1234';
-      } else if (amzioSettleTranInvoice[i].marketplace == 8) {
-        amzioSettleTranInvoice[i].customer = '1234';
-      } else if (amzioSettleTranInvoice[i].marketplace == 9) {
-        amzioSettleTranInvoice[i].customer = '1234';
-      } else if (amzioSettleTranInvoice[i].marketplace == 10) {
-        amzioSettleTranInvoice[i].customer = '1234';
-      } else if (amzioSettleTranInvoice[i].marketplace == 11) {
-        amzioSettleTranInvoice[i].customer = '1234';
-      } else if (amzioSettleTranInvoice[i].marketplace == 13) {
-        amzioSettleTranInvoice[i].customer = '1234';
-      } else if (amzioSettleTranInvoice[i].marketplace == 15) {
-        amzioSettleTranInvoice[i].customer = '1234';
-      } else if (amzioSettleTranInvoice[i].marketplace == 18) {
-        amzioSettleTranInvoice[i].customer = '1234';
-      }
-
-      var invoiceObj = record.create({
-        type: 'invoice',
-        isDynamic: true,
-        defaultValues: 123
+      invoiceObj.selectNewLine({
+        sublistId: 'item'
+      });
+      invoiceObj.setCurrentSublistValue({
+        sublistId: 'item',
+        fieldId: 'item',
+        value: amzioSettleTranInvoice.items[i].sku
+      });
+      invoiceObj.setCurrentSublistValue({
+        sublistId: 'item',
+        fieldId: 'quantity',
+        value: amzioSettleTranInvoice.items[i].qty
+      });
+      invoiceObj.setCurrentSublistValue({
+        sublistId: 'item',
+        fieldId: 'custcol_celigo_etail_order_line_id',
+        value: amzioSettleTranInvoice.items[i].orderid
+      });
+      invoiceObj.setCurrentSublistValue({
+        sublistId: 'item',
+        fieldId: 'amount',
+        value: amzioSettleTranInvoice.items[i].amount
+      });
+      invoiceObj.commitLine({
+        sublistId: 'item'
       });
 
-      amzioSettleTran.selectNewLine('recmachcustrecord_celigo_amzio_set_ip_par_trans');
 
     }
 
-
-
-
-
-    amzioSettleTran.save();
+    invoiceObj.save();
 
 
     // var invoiceSearchObj = search.create({
