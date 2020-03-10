@@ -17,6 +17,21 @@
 
 define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
 
+  var marketplaceMap = {
+    2: 1234,
+    3: 1234,
+    4: 1234,
+    6: 1234,
+    7: 1234,
+    8: 1234,
+    9: 1234,
+    10: 1234,
+    11: 1234,
+    13: 1234,
+    15: 1234,
+    18: 1234
+  };
+
   function getInputData() {
 
     var customrecord_celigo_amzio_settle_transSearchObj = search.create({
