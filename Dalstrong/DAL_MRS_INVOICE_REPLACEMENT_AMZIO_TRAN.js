@@ -18,18 +18,18 @@
 define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
 
   var marketplaceMap = {
-    2: 1234,
-    3: 1234,
-    4: 1234,
-    6: 1234,
-    7: 1234,
-    8: 1234,
-    9: 1234,
-    10: 1234,
-    11: 1234,
+    2: 318225,
+    3: 318226,
+    4: 318227,
+    6: 318334,
+    7: 318328,
+    8: 318329,
+    9: 318330,
+    10: 318333,
+    11: 318331,
     13: 1234,
-    15: 1234,
-    18: 1234
+    15: 318335,
+    18: 318332
   };
 
   function getInputData() {
@@ -115,7 +115,7 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
     var cus_rec_celigo_amzio_posted_date = res.values.custrecord_celigo_amzio_set_posted_date;
     log.debug('The Settlement Posted Date is: ', cus_rec_celigo_amzio_posted_date);
 
-    var cus_rec_celigo_amzio_marketplace = res.values.custrecordrsm_marketplace_cus_tran_settl.value;
+    var cus_rec_celigo_amzio_marketplace = res.values.custrecordrsm_marketplace_cus_tran_settl;
     log.debug('The Settlement Marketplace is: ', cus_rec_celigo_amzio_marketplace);
 
     var amzioSettleTran = record.load({
@@ -232,7 +232,6 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
     amzioSettleTran.save();
 
     log.debug('The Settlement Transaction has been successfully saved with Invoice: ', cus_rec_cash_sale_internal_id);
-
 
   }
 
