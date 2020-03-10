@@ -4,12 +4,12 @@
  * Name: DAL_MRS_SHOPIFY_CASHSALE_AMZIO_TRAN.js
  * @NScriptType MapReduceScript
  * @NApiVersion 2.x
- * Version: 0.0.2
+ * Version: 0.0.1
  *
  *
  * Author: Nicolas Bean
  * Purpose: The purpose of this script is to associate Shopify Cash Sale Transactions to the corresponding Celigo Amazon Settlement Transaction
- * Script: DAL_MRS_SHOPIFY_CASHSALE_AMZIO_TRAN
+ * Script: DAL_MRS_INVOICE_REPLACEMENT_AMZIO_TRAN
  * Deploy:
  *
  *
@@ -100,6 +100,9 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
     var cus_rec_celigo_amzio_posted_date = res.values.custrecord_celigo_amzio_set_posted_date;
     log.debug('The Settlement Posted Date is: ', cus_rec_celigo_amzio_posted_date);
 
+    var cus_rec_celigo_amzio_marketplace = res.custrecordrsm_marketplace_cus_tran_settl;
+    log.debug('The Settlement Marketplace is: ', cus_rec_celigo_amzio_marketplace);
+
     var amzioSettleTran = record.load({
       type: 'customrecord_celigo_amzio_settle_trans',
       id: cus_rec_celigo_amzio_settle_internalid
@@ -113,84 +116,122 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
 
     log.debug('The Settlement Transaction line count is: ', amzioLineItemCount);
 
-    var amzioSettleTranSKU = [];
-    var amzioSettleTranOrderID = [];
-    var amzioSettleTranQty = [];
-    var amzioSettleTranAmt = [];
+    var amzioSettleTranInvoice = {};
 
     for (var i = 0; i < amzioLineItemCount; i++) {
 
+      amzioSettleTranInvoice[i] = {
+        'date': cus_rec_celigo_amzio_posted_date,
+        'customer': "",
+        'marketplace': cus_rec_celigo_amzio_marketplace,
+        'ponumber': cus_rec_celigo_amzio_settle_order_id,
+        'sku': amzioSettleTran.getCurrentSublistValue({
+          sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
+          fieldId: custrecord_celigo_amzio_set_ip_ord_sku
+        }),
+        'qty': amzioSettleTran.getCurrentSublistValue({
+          sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
+          fieldId: custrecord_celigo_amzio_set_ip_ord_sku
+        }),
+        'orderid': amzioSettleTran.getCurrentSublistValue({
+          sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
+          fieldId: custrecord_celigo_amzio_set_ip_or_it_id
+        }),
+        'amount': amzioSettleTran.getCurrentSublistValue({
+          sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
+          fieldId: custrecord_celigo_amzio_set_ip_or_it_id
+        }),
+      };
+
+      log.debug(JSON.stringify(amzioSettleTranInvoice[i]));
+
+      if (amzioSettleTranInvoice[i].marketplace == 2) {
+        amzioSettleTranInvoice[i].customer = '1234';
+      } else if (amzioSettleTranInvoice[i].marketplace == 3) {
+        amzioSettleTranInvoice[i].customer = '1234';
+      } else if (amzioSettleTranInvoice[i].marketplace == 4) {
+        amzioSettleTranInvoice[i].customer = '1234';
+      } else if (amzioSettleTranInvoice[i].marketplace == 6) {
+        amzioSettleTranInvoice[i].customer = '1234';
+      } else if (amzioSettleTranInvoice[i].marketplace == 7) {
+        amzioSettleTranInvoice[i].customer = '1234';
+      } else if (amzioSettleTranInvoice[i].marketplace == 8) {
+        amzioSettleTranInvoice[i].customer = '1234';
+      } else if (amzioSettleTranInvoice[i].marketplace == 9) {
+        amzioSettleTranInvoice[i].customer = '1234';
+      } else if (amzioSettleTranInvoice[i].marketplace == 10) {
+        amzioSettleTranInvoice[i].customer = '1234';
+      } else if (amzioSettleTranInvoice[i].marketplace == 11) {
+        amzioSettleTranInvoice[i].customer = '1234';
+      } else if (amzioSettleTranInvoice[i].marketplace == 13) {
+        amzioSettleTranInvoice[i].customer = '1234';
+      } else if (amzioSettleTranInvoice[i].marketplace == 15) {
+        amzioSettleTranInvoice[i].customer = '1234';
+      } else if (amzioSettleTranInvoice[i].marketplace == 18) {
+        amzioSettleTranInvoice[i].customer = '1234';
+      }
+
+      var invoiceObj = record.create({
+        type: 'invoice',
+        isDynamic: true,
+        defaultValues: 123
+      });
+
       amzioSettleTran.selectNewLine('recmachcustrecord_celigo_amzio_set_ip_par_trans');
-      amzioSettleTranSKU[i].push(amzioSettleTran.getCurrentSublistValue({
-        sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
-        fieldId: custrecord_celigo_amzio_set_ip_ord_sku
-      }));
-      amzioSettleTranSKU[i].push(amzioSettleTran.getCurrentSublistValue({
-        sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
-        fieldId: custrecord_celigo_amzio_set_ip_ord_sku
-      }));
-      amzioSettleTranOrderID[i].push(amzioSettleTran.getCurrentSublistValue({
-        sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
-        fieldId: custrecord_celigo_amzio_set_ip_or_it_id
-      }));
-      amzioSettleTranQty[i].push(amzioSettleTran.getCurrentSublistValue({
-        sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
-        fieldId: custrecord_celigo_amzio_set_ip_quantity
-      }));
-      amzioSettleTranAmt[i].push(amzioSettleTran.getCurrentSublistValue({
-        sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
-        fieldId: custrecord_celigo_amzio_set_ip_principal
-      }));
 
     }
+
+
+
+
 
     amzioSettleTran.save();
 
 
-    var invoiceSearchObj = search.create({
-      type: "invoice",
-      filters: [
-        ["type", "anyof", "CustInvc"],
-        "AND",
-        ["mainline", "is", "T"],
-        "AND",
-        ["otherrefnum", "equalto", "TBD"]
-      ],
-      columns: [
-        search.createColumn({
-          name: "trandate",
-          label: "Date"
-        }),
-        search.createColumn({
-          name: "postingperiod",
-          label: "Period"
-        }),
-        search.createColumn({
-          name: "type",
-          label: "Type"
-        }),
-        search.createColumn({
-          name: "tranid",
-          label: "Document Number"
-        }),
-        search.createColumn({
-          name: "otherrefnum",
-          label: "PO/Cheque Number"
-        }),
-        search.createColumn({
-          name: "entity",
-          label: "Name"
-        }),
-        search.createColumn({
-          name: "memo",
-          label: "Memo"
-        }),
-        search.createColumn({
-          name: "amount",
-          label: "Amount"
-        })
-      ]
-    });
+    // var invoiceSearchObj = search.create({
+    //   type: "invoice",
+    //   filters: [
+    //     ["type", "anyof", "CustInvc"],
+    //     "AND",
+    //     ["mainline", "is", "T"],
+    //     "AND",
+    //     ["otherrefnum", "equalto", "TBD"]
+    //   ],
+    //   columns: [
+    //     search.createColumn({
+    //       name: "trandate",
+    //       label: "Date"
+    //     }),
+    //     search.createColumn({
+    //       name: "postingperiod",
+    //       label: "Period"
+    //     }),
+    //     search.createColumn({
+    //       name: "type",
+    //       label: "Type"
+    //     }),
+    //     search.createColumn({
+    //       name: "tranid",
+    //       label: "Document Number"
+    //     }),
+    //     search.createColumn({
+    //       name: "otherrefnum",
+    //       label: "PO/Cheque Number"
+    //     }),
+    //     search.createColumn({
+    //       name: "entity",
+    //       label: "Name"
+    //     }),
+    //     search.createColumn({
+    //       name: "memo",
+    //       label: "Memo"
+    //     }),
+    //     search.createColumn({
+    //       name: "amount",
+    //       label: "Amount"
+    //     })
+    //   ]
+    // });
     //var searchResultCount = invoiceSearchObj.runPaged().count;
     //log.debug("invoiceSearchObj result count", searchResultCount);
     //invoiceSearchObj.run().each(function(result) {
@@ -198,12 +239,12 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
     //  return true;
     //});
 
-    var invoiceResults = invoiceSearchObj.run().getRange(0, 100);
-    log.debug('Invoice Search', invoiceResults.length + ' ' + JSON.stringify(invoiceResults));
-
-    var cus_rec_invoice_internal_id = invoiceResults[0].id;
-
-    log.debug('The Invoice Internal ID is: ', cus_rec_invoice_internal_id);
+    // var invoiceResults = invoiceSearchObj.run().getRange(0, 100);
+    // log.debug('Invoice Search', invoiceResults.length + ' ' + JSON.stringify(invoiceResults));
+    //
+    // var cus_rec_invoice_internal_id = invoiceResults[0].id;
+    //
+    // log.debug('The Invoice Internal ID is: ', cus_rec_invoice_internal_id);
 
     // var cashSaleRec = record.load({type: 'cashsale', id: cus_rec_cash_sale_internal_id});
     //
