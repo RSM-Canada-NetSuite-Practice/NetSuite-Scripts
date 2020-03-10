@@ -223,15 +223,19 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
 
     log.debug('The Invoice has been successfully saved: ', invoiceinternalID);
 
-    amzioSettleTran.setValue({fieldId: 'custrecord_celigo_amzio_set_parent_tran', value:invoiceinternalID});
-    amzioSettleTran.setValue({fieldId: 'custrecord_celigo_amzio_set_trans_to_rec', value:invoiceinternalID});
-    amzioSettleTran.setValue({fieldId: 'custrecord_celigo_amzio_set_recond_trans', value:invoiceinternalID});
-    amzioSettleTran.setValue({fieldId: 'custrecord_celigo_amzio_set_exp_to_io' ,value: true});
-    amzioSettleTran.setValue({fieldId: 'custrecord_celigo_amzio_set_recon_status', value: '5'});
+    if (invoiceinternalID != null) {
 
-    amzioSettleTran.save();
+      amzioSettleTran.setValue({fieldId: 'custrecord_celigo_amzio_set_parent_tran', value:invoiceinternalID});
+      amzioSettleTran.setValue({fieldId: 'custrecord_celigo_amzio_set_trans_to_rec', value:invoiceinternalID});
+      amzioSettleTran.setValue({fieldId: 'custrecord_celigo_amzio_set_recond_trans', value:invoiceinternalID});
+      amzioSettleTran.setValue({fieldId: 'custrecord_celigo_amzio_set_exp_to_io' ,value: true});
+      amzioSettleTran.setValue({fieldId: 'custrecord_celigo_amzio_set_recon_status', value: '5'});
 
-    log.debug('The Settlement Transaction has been successfully saved with Invoice: ', cus_rec_cash_sale_internal_id);
+      amzioSettleTran.save();
+
+      log.debug('The Settlement Transaction has been successfully saved with Invoice: ', cus_rec_cash_sale_internal_id);
+
+    }
 
   }
 
