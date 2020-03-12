@@ -50,7 +50,17 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
     var customrecord_celigo_amzio_settle_transSearchObj = search.create({
       type: "customrecord_celigo_amzio_settle_trans",
       filters: [
-        ["custrecord_celigo_amzio_set_mer_order_id", "contains", "CONSUMER"]
+        ["custrecord_celigo_amzio_set_recond_trans", "anyof", "@NONE@"],
+        "AND",
+        [
+          ["custrecord_celigo_amzio_set_mer_order_id", "startswith", "CONSUMER"], "OR", ["custrecord_celigo_amzio_set_mer_order_id", "startswith", "S"]
+        ],
+        "AND",
+        ["custrecord_celigo_amzio_set_posted_date", "notonorbefore", "2020-01-31"],
+        "AND",
+        ["custrecord_celigo_amzio_set_parent_tran", "anyof", "@NONE@"],
+        "AND",
+        ["custrecord_celigo_amzio_set_trans_to_rec", "anyof", "@NONE@"]
       ],
       columns: [
         search.createColumn({
@@ -227,34 +237,51 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
             sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
             fieldId: 'custrecord_celigo_amzio_set_ip_principal'
           }),
+          'misctype': amzioSettleTran.getCurrentSublistValue({
+            sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
+            fieldId: 'custrecord_celigo_amzio_set_ip_mis_am_ty'
+          }),
+          'miscamount': amzioSettleTran.getCurrentSublistValue({
+            sublistId: 'recmachcustrecord_celigo_amzio_set_ip_par_trans',
+            fieldId: 'custrecord_celigo_amzio_set_ip_mis_amt'
+          }),
 
         };
 
         log.debug('The Settlement Transaction Item is: ', JSON.stringify(amzioSettleTranInvoice[i]));
 
-        //Lookup SKU InternalId
-        var itemSearchObj = search.create({
-          type: "item",
-          filters: [
-            ["name", "contains", amzioSettleTranInvoice[i].sku]
-          ],
-          columns: [
-            search.createColumn({
-              name: "internalid",
-              label: "Internal ID"
-            }),
-            search.createColumn({
-              name: "itemid",
-              label: "Name"
-            })
-          ]
-        });
+        if (amzioSettleTranInvoice[i].sku == "" && amzioSettleTranInvoice[i].misctype == 'ShipmentFees') {
 
-        var searchResultCount = itemSearchObj.run().getRange({
-          start: 0,
-          end: 10
-        });
-        amzioSettleTranInvoice[i].skuinternalid = searchResultCount[0].id;
+          amzioSettleTranInvoice[i].skuinternalid = 66;
+          amzioSettleTranInvoice[i].amount = Math.abs(amzioSettleTranInvoice[i].miscamount);
+
+        } else {
+
+          //Lookup SKU InternalId
+          var itemSearchObj = search.create({
+            type: "item",
+            filters: [
+              ["name", "contains", amzioSettleTranInvoice[i].sku]
+            ],
+            columns: [
+              search.createColumn({
+                name: "internalid",
+                label: "Internal ID"
+              }),
+              search.createColumn({
+                name: "itemid",
+                label: "Name"
+              })
+            ]
+          });
+
+          var searchResultCount = itemSearchObj.run().getRange({
+            start: 0,
+            end: 10
+          });
+          amzioSettleTranInvoice[i].skuinternalid = searchResultCount[0].id;
+
+        }
 
         log.debug('Sku Internal ID is: ', amzioSettleTranInvoice[i].skuinternalid);
 
@@ -308,18 +335,18 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
         fieldId: 'custrecord_celigo_amzio_set_trans_to_rec',
         value: invoiceinternalID
       });
-      // amzioSettleTran.setValue({
-      //   fieldId: 'custrecord_celigo_amzio_set_recond_trans',
-      //   value: invoiceinternalID
-      // });
-      // amzioSettleTran.setValue({
-      //   fieldId: 'custrecord_celigo_amzio_set_exp_to_io',
-      //   value: true
-      // });
-      // amzioSettleTran.setValue({
-      //   fieldId: 'custrecord_celigo_amzio_set_recon_status',
-      //   value: '5'
-      // });
+      amzioSettleTran.setValue({
+        fieldId: 'custrecord_celigo_amzio_set_recond_trans',
+        value: invoiceinternalID
+      });
+      amzioSettleTran.setValue({
+        fieldId: 'custrecord_celigo_amzio_set_exp_to_io',
+        value: true
+      });
+      amzioSettleTran.setValue({
+        fieldId: 'custrecord_celigo_amzio_set_recon_status',
+        value: 5
+      });
 
     }
 
