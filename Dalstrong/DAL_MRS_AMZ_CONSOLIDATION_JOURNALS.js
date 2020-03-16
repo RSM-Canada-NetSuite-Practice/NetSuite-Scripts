@@ -17,21 +17,6 @@
 
 define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
 
-  var marketplaceMap = {
-    2: 318225,
-    3: 318226,
-    4: 318227,
-    6: 318334,
-    7: 318328,
-    8: 318329,
-    9: 318330,
-    10: 318333,
-    11: 318331,
-    13: 1234,
-    15: 318335,
-    18: 318332
-  };
-
   var invoiceLocationMap = {
     201: 6,
     101: 3,
@@ -47,94 +32,93 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
 
   function getInputData() {
 
-    var customrecord_celigo_amzio_settle_transSearchObj = search.create({
-      type: "customrecord_celigo_amzio_settle_trans",
+    var transactionSearchObj = search.create({
+      type: "transaction",
       filters: [
-        ["custrecord_celigo_amzio_set_recond_trans", "anyof", "@NONE@"],
+        ["account", "anyof", "1199", "1200", "1201", "1208", "1209", "1210", "1211", "1205", "1203", "1204"],
         "AND",
-        [
-          ["custrecord_celigo_amzio_set_mer_order_id", "startswith", "CONSUMER"], "OR", ["custrecord_celigo_amzio_set_mer_order_id", "startswith", "S"]
-        ],
-        "AND",
-        ["custrecord_celigo_amzio_set_posted_date", "notonorbefore", "2020-01-31"],
-        "AND",
-        ["custrecord_celigo_amzio_set_parent_tran", "anyof", "@NONE@"],
-        "AND",
-        ["custrecord_celigo_amzio_set_trans_to_rec", "anyof", "@NONE@"]
+        ["custbody_rsm_rec_proc_daily", "is", "F"]
       ],
       columns: [
         search.createColumn({
-          name: "name",
-          sort: search.Sort.ASC,
-          label: "Name"
+          name: "trandate",
+          summary: "GROUP",
+          label: "Date"
         }),
         search.createColumn({
-          name: "custrecord_celigo_amzio_set_posted_date",
-          label: "Posted Date"
+          name: "account",
+          summary: "GROUP",
+          label: "Account"
         }),
         search.createColumn({
-          name: "custrecord_celigo_amzio_set_tran_type",
-          label: "Transaction Type"
+          name: "custrecord_rsm_destination_account",
+          join: "account",
+          summary: "GROUP",
+          label: "Destination Account"
         }),
         search.createColumn({
-          name: "custrecord_celigo_amzio_set_amz_account",
-          label: "Amazon Account"
+          name: "postingperiod",
+          summary: "GROUP",
+          label: "Period"
         }),
         search.createColumn({
-          name: "custrecord_celigo_amzio_set_order_id",
-          label: "Order Id"
+          name: "currency",
+          summary: "GROUP",
+          label: "Currency"
         }),
         search.createColumn({
-          name: "custrecord_celigo_amzio_set_mer_order_id",
-          label: "Merchant Order Id"
-        }),
-        search.createColumn({
-          name: "custrecord_celigo_amzio_set_marketplace",
-          label: "Marketplace Name"
-        }),
-        search.createColumn({
-          name: "custrecordrsm_marketplace_cus_tran_settl",
+          name: "cseg1",
+          summary: "GROUP",
           label: "Marketplace"
         }),
         search.createColumn({
-          name: "custrecord_celigo_amzio_set_settlemnt_id",
-          label: "Settlement Id"
+          name: "debitfxamount",
+          summary: "SUM",
+          label: "Amount (Debit) FX"
         }),
         search.createColumn({
-          name: "custrecord_celigo_amzio_set_recon_status",
-          label: "Status"
+          name: "debitamount",
+          summary: "SUM",
+          label: "Amount (Debit)"
         }),
         search.createColumn({
-          name: "custrecord_celigo_amzio_set_tran_sub_tot",
-          label: "Net Revenue"
+          name: "creditfxamount",
+          summary: "SUM",
+          label: "Amount (Credit) FX"
         }),
         search.createColumn({
-          name: "custrecord_celigo_amzio_set_tran_amount",
-          label: "Transaction Amount"
+          name: "creditamount",
+          summary: "SUM",
+          label: "Amount (Credit)"
         })
       ]
     });
-    //var searchResultCount = customrecord_celigo_amzio_settle_transSearchObj.runPaged().count;
-    //log.debug("customrecord_celigo_amzio_settle_transSearchObj result count", searchResultCount);
-    //customrecord_celigo_amzio_settle_transSearchObj.run().each(function(result) {
+    //var searchResultCount = transactionSearchObj.runPaged().count;
+    //log.debug("transactionSearchObj result count",searchResultCount);
+    //transactionSearchObj.run().each(function(result){
     // .run().each has a limit of 4,000 results
-    //  return true;
+    //   return true;
     //});
 
-    var res = customrecord_celigo_amzio_settle_transSearchObj.run().getRange(0, 100);
+    var res = transactionSearchObj.run().getRange(0, 100);
     log.debug('getInputData', res.length + ' ' + JSON.stringify(res));
-    return customrecord_celigo_amzio_settle_transSearchObj;
+    return transactionSearchObj;
 
   }
 
   function map(context) {
 
     log.debug('Map', context.value);
-
     var res = JSON.parse(context.value);
+    var accountObject = {}, date = [], account = [], destinationAccount = [], currency = [], marketplace = [], amountDebit = '', amountCredit = '';
+    var accountObjectID = res.id;
 
-    var cus_rec_celigo_amzio_settle_internalid = res.id;
-    log.debug('The Settlement Transaction internal ID is: ', cus_rec_celigo_amzio_settle_internalid);
+    
+
+
+
+    var journalDate = res.Date;
+    log.debug('The Journal Date is: ', cus_rec_celigo_amzio_settle_internalid);
 
     var cus_rec_celigo_amzio_settle_order_id = res.values.custrecord_celigo_amzio_set_order_id;
     log.debug('The Settlement Order ID is: ', cus_rec_celigo_amzio_settle_order_id);
@@ -257,29 +241,29 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
 
         //} else {
 
-          //Lookup SKU InternalId
-          var itemSearchObj = search.create({
-            type: "item",
-            filters: [
-              ["name", "contains", amzioSettleTranInvoice[i].sku]
-            ],
-            columns: [
-              search.createColumn({
-                name: "internalid",
-                label: "Internal ID"
-              }),
-              search.createColumn({
-                name: "itemid",
-                label: "Name"
-              })
-            ]
-          });
+        //Lookup SKU InternalId
+        var itemSearchObj = search.create({
+          type: "item",
+          filters: [
+            ["name", "contains", amzioSettleTranInvoice[i].sku]
+          ],
+          columns: [
+            search.createColumn({
+              name: "internalid",
+              label: "Internal ID"
+            }),
+            search.createColumn({
+              name: "itemid",
+              label: "Name"
+            })
+          ]
+        });
 
-          var searchResultCount = itemSearchObj.run().getRange({
-            start: 0,
-            end: 10
-          });
-          amzioSettleTranInvoice[i].skuinternalid = searchResultCount[0].id;
+        var searchResultCount = itemSearchObj.run().getRange({
+          start: 0,
+          end: 10
+        });
+        amzioSettleTranInvoice[i].skuinternalid = searchResultCount[0].id;
 
         //}
 
@@ -315,7 +299,9 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
 
       }
 
-      var invoiceAmount = invoiceObj.getValue({fieldId:'amount'});
+      var invoiceAmount = invoiceObj.getValue({
+        fieldId: 'amount'
+      });
       var invoiceinternalID = invoiceObj.save();
 
     } catch (e) {
