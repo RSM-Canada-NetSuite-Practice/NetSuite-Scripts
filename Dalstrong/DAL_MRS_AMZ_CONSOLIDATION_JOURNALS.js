@@ -1,15 +1,15 @@
 /*******************************************************************
  *
  *
- * Name: DAL_MRS_SHOPIFY_CASHSALE_AMZIO_TRAN.js
+ * Name: DAL_MRS_AMZ_CONSOLIDATION_JOURNALS.js
  * @NScriptType MapReduceScript
  * @NApiVersion 2.x
  * Version: 0.0.1
  *
  *
  * Author: Nicolas Bean
- * Purpose: The purpose of this script is to associate Shopify Cash Sale Transactions to the corresponding Celigo Amazon Settlement Transaction
- * Script: DAL_MRS_INVOICE_REPLACEMENT_AMZIO_TRAN
+ * Purpose: The purpose of this script is to move money from the consolidation account for each marketplace to the corresponding bank account
+ * Script: DAL_MRS_AMZ_CONSOLIDATION_JOURNALS.js
  * Deploy:
  *
  *
@@ -97,6 +97,7 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
 
       log.debug('Map', context.value);
 
+      //Create the account object
       var accountObject = {
         date: '',
         //  account : '',
@@ -107,6 +108,7 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
         amountCredit: '',
       };
 
+      //Create JSON object out of the context passed through
       var res = JSON.parse(context.value);
       var accountObjectID = res.values['GROUP(account)'].value;
       log.debug('The Account Object ID is: ', accountObjectID);
@@ -121,6 +123,7 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
 
       log.debug('The Account Object is: ', JSON.stringify(accountObject));
 
+      //Pass through to the reduce stage the account ID and the account object
       context.write({
         key: accountObjectID,
         value: accountObject
@@ -130,12 +133,14 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
 
     function reduce(context) {
 
+      //Pass consolidation account key
       var accountObjectID = context.key;
       var results = context.values;
       log.debug('Reduce', results);
 
       var errors = [];
 
+      //Loop through the accounts passed through
       for (var i = 0; i < results.length; i++) {
         var res = JSON.parse(results[i]);
 
@@ -164,6 +169,7 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
           var jamountCredit = res['amountCredit'];
           log.debug('Credit is: ', jamountCredit);
 
+          //Create journal entry to move the amounts from the consolidation account to the bank accounts
           var journalObj = record.create({
             type: 'journalentry',
             isDynamic: true
@@ -180,15 +186,20 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
             fieldId: 'trandate',
             value: jdate
           });
-          // journalObj.setValue({
-          //   fieldId: 'memo',
-          //   value: 'Transfer for :' + jdate + 'to ' + jdestinationAccount
-          // });
+          journalObj.setValue({
+            fieldId: 'cseg1',
+            value: jmarketplace
+          });
+          journalObj.setValue({
+            fieldId: 'department',
+            value: 4
+          });
+          journalObj.setValue({
+             fieldId: 'memo',
+             value: ('Transfer for :' + jdate + 'to ' + jdestinationAccount)
+           });
 
           log.debug('Header fields have been set. ', journalObj);
-
-          //Fetch exchange rate
-          //journalObj.setValue({fieldId:'trandate',value:jdate});
 
           //Set journal original account and amounts
           journalObj.selectNewLine({
@@ -236,6 +247,7 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
 
           log.debug('Line 2 has been set. ', journalObj);
 
+          //Save the journal entry
           var journalID = journalObj.save();
           log.debug('The Journal has been successfully saved: ', journalID);
 
@@ -248,24 +260,6 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
         }
       }
     }
-
-//   var cus_rec_celigo_amzio_settlement_reduce_internalid = context.key;
-//
-//   try {
-//
-//     var transactionSettlement = record.delete({
-//       type: 'customrecord_celigo_amzio_settle_trans',
-//       id: cus_rec_celigo_amzio_settlement_reduce_internalid,
-//     });
-//
-//   } catch (e) {
-//
-//     log.debug('Error reads: ', e.name + e.message);
-//
-//   }
-//
-//   log.debug('Reduce');
-//
 
 function summarize(context) {
 
