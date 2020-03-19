@@ -24,7 +24,9 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
       filters: [
         ["account", "anyof", "1199", "1200", "1201", "1208", "1209", "1210", "1211", "1205", "1203", "1204"],
         "AND",
-        ["custbody_rsm_rec_proc_daily", "is", "F"]
+        ["custbody_rsm_rec_proc_daily", "is", "F"],
+        "AND",
+        ["type", "noneof", "Journal"]
       ],
       columns: [
         search.createColumn({
@@ -145,12 +147,12 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
           log.debug('Marketplace is: ', tempMarketplace);
 
           var tempDebit = res[i].getValue({
-            name: 'debitamount'
+            name: 'debitfxamount'
           });
           log.debug('Debit amount is: ', tempDebit);
 
           var tempCredit = res[i].getValue({
-            name: 'creditamount'
+            name: 'creditfxamount'
           });
           log.debug('Credit amount is: ', tempCredit);
 
@@ -331,11 +333,23 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
         value: accountObjectID
       });
 
-      journalObj.setCurrentSublistValue({
-        sublistId: 'line',
-        fieldId: 'credit',
-        value: jamountDebit
+      log.debug('The debit amount is: ', jamountDebit);
+      log.debug('The credit amount is: ', jamountCredit);
+
+      if (jamountDebit != null && jamountDebit != '') {
+        journalObj.setCurrentSublistValue({
+          sublistId: 'line',
+          fieldId: 'debit',
+          value: jamountDebit
+        });
+      } else {
+        journalObj.setCurrentSublistValue({
+          sublistId: 'line',
+          fieldId: 'credit',
+          value: jamountCredit
+
       });
+    }
 
       journalObj.commitLine({
         sublistId: 'line'
@@ -354,11 +368,20 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
         value: jdestinationAccount
       });
 
-      journalObj.setCurrentSublistValue({
-        sublistId: 'line',
-        fieldId: 'debit',
-        value: jamountDebit
+      if (jamountDebit != null && jamountDebit != '') {
+        journalObj.setCurrentSublistValue({
+          sublistId: 'line',
+          fieldId: 'credit',
+          value: jamountDebit
+        });
+      } else {
+        journalObj.setCurrentSublistValue({
+          sublistId: 'line',
+          fieldId: 'debit',
+          value: jamountCredit
+
       });
+    }
 
       journalObj.commitLine({
         sublistId: 'line'
@@ -369,6 +392,7 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
       //Save the journal entry
       var journalID = journalObj.save();
       log.debug('The Journal has been successfully saved: ', journalID);
+      context.write(journalID, result.paymentid);
 
     } catch (e) {
       log.debug('error', e.name + e.message);
@@ -382,10 +406,65 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
   function reduce(context) {
 
     //Pass consolidation account key
-    var accountObjectID = context.key;
-    var results = context.values;
-    log.debug('Reduce', results);
-    
+    var journalID = context.key;
+    log.debug('Reduce key: ', context.key);
+    var results = JSON.stringify(context.values);
+    log.debug('Reduce values: ', results + " " + typeof results);
+
+    try {
+
+      var temppayment = results.replace(/[^0-9\,]/g, "");
+      log.debug('Temp Payment ids 3 are: ', temppayment);
+      var paymentids = temppayment.split(',');
+      log.debug('Temp Payment ids 3 are: ', paymentids);
+
+      for (var i = 0; i < paymentids.length; i++) {
+
+        try {
+
+          var temprecordtype = search.lookupFields({
+            type: search.Type.TRANSACTION,
+            id: paymentids[i],
+            columns: 'type'
+          });
+
+          log.debug('The temp record type is: ', temprecordtype);
+
+          var temprecordtype2 = temprecordtype.type[0].text;
+          log.debug('The record type is: ', temprecordtype2);
+
+          if (temprecordtype2 == 'Payment') {
+            record.submitFields({
+              type: 'customerpayment',
+              id: paymentids[i],
+              values: {
+                custbody_rsm_rec_proc_daily: true,
+                custbodyrsm_cus_pay_jour_entry: journalID
+              }
+            });
+          } else if (temprecordtype2 == 'Customer Refund') {
+            record.submitFields({
+              type: 'customerrefund',
+              id: paymentids[i],
+              values: {
+                custbody_rsm_rec_proc_daily: true,
+                custbodyrsm_cus_pay_jour_entry: journalID
+              }
+            });
+          }
+        } catch (e) {
+          log.debug('error', e.name + e.message);
+          var temp2 = {
+            'error': (e.name + ' ' + e.message)
+          };
+        }
+      }
+    } catch (e) {
+      log.debug('error', e.name + e.message);
+      var temp = {
+        'error': (e.name + ' ' + e.message)
+      };
+    }
   }
 
   function summarize(context) {
