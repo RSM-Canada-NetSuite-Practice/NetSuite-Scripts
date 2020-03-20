@@ -249,73 +249,71 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
         };
 
         log.debug('The Settlement Transaction Item is: ', JSON.stringify(amzioSettleTranInvoice[i]));
+        log.debug('The Settlement Transaction SKU is: ', JSON.stringify(amzioSettleTranInvoice[i].sku));
+        log.debug('The Settlemetn Transaction Type is: ', JSON.stringify(amzioSettleTranInvoice[i].misctype));
 
-        //if (amzioSettleTranInvoice[i].sku == "" && amzioSettleTranInvoice[i].misctype == 'ShipmentFees') {
+        if (amzioSettleTranInvoice[i].sku != "" && amzioSettleTranInvoice[i].misctype != "ShipmentFees") {
+        log.debug('The If statement has been entered: ', JSON.stringify(amzioSettleTranInvoice[i].sku));
 
-        //  amzioSettleTranInvoice[i].skuinternalid = 66;
-        //  amzioSettleTranInvoice[i].amount = Math.abs(amzioSettleTranInvoice[i].miscamount);
+        //Lookup SKU InternalId
+        var itemSearchObj = search.create({
+          type: "item",
+          filters: [
+            ["name", "contains", amzioSettleTranInvoice[i].sku]
+          ],
+          columns: [
+            search.createColumn({
+              name: "internalid",
+              label: "Internal ID"
+            }),
+            search.createColumn({
+              name: "itemid",
+              label: "Name"
+            })
+          ]
+        });
 
-        //} else {
-
-          //Lookup SKU InternalId
-          var itemSearchObj = search.create({
-            type: "item",
-            filters: [
-              ["name", "contains", amzioSettleTranInvoice[i].sku]
-            ],
-            columns: [
-              search.createColumn({
-                name: "internalid",
-                label: "Internal ID"
-              }),
-              search.createColumn({
-                name: "itemid",
-                label: "Name"
-              })
-            ]
-          });
-
-          var searchResultCount = itemSearchObj.run().getRange({
-            start: 0,
-            end: 10
-          });
-          amzioSettleTranInvoice[i].skuinternalid = searchResultCount[0].id;
-
-        //}
+        var searchResultCount = itemSearchObj.run().getRange({
+          start: 0,
+          end: 10
+        });
+        amzioSettleTranInvoice[i].skuinternalid = searchResultCount[0].id;
 
         log.debug('Sku Internal ID is: ', amzioSettleTranInvoice[i].skuinternalid);
 
-        invoiceObj.selectNewLine({
-          sublistId: 'item'
-        });
-        invoiceObj.setCurrentSublistValue({
-          sublistId: 'item',
-          fieldId: 'item',
-          value: amzioSettleTranInvoice[i].skuinternalid
-        });
-        invoiceObj.setCurrentSublistValue({
-          sublistId: 'item',
-          fieldId: 'quantity',
-          value: amzioSettleTranInvoice[i].qty
-        });
-        invoiceObj.setCurrentSublistValue({
-          sublistId: 'item',
-          fieldId: 'custcol_celigo_etail_order_line_id',
-          value: amzioSettleTranInvoice[i].orderid
-        });
-        invoiceObj.setCurrentSublistValue({
-          sublistId: 'item',
-          fieldId: 'amount',
-          value: amzioSettleTranInvoice[i].amount
-        });
-        invoiceObj.commitLine({
-          sublistId: 'item'
-        });
-
-
+          invoiceObj.selectNewLine({
+            sublistId: 'item'
+          });
+          invoiceObj.setCurrentSublistValue({
+            sublistId: 'item',
+            fieldId: 'item',
+            value: amzioSettleTranInvoice[i].skuinternalid
+          });
+          invoiceObj.setCurrentSublistValue({
+            sublistId: 'item',
+            fieldId: 'quantity',
+            value: amzioSettleTranInvoice[i].qty
+          });
+          invoiceObj.setCurrentSublistValue({
+            sublistId: 'item',
+            fieldId: 'custcol_celigo_etail_order_line_id',
+            value: amzioSettleTranInvoice[i].orderid
+          });
+          invoiceObj.setCurrentSublistValue({
+            sublistId: 'item',
+            fieldId: 'amount',
+            value: amzioSettleTranInvoice[i].amount
+          });
+          invoiceObj.commitLine({
+            sublistId: 'item'
+          });
+        }
       }
 
-      var invoiceAmount = invoiceObj.getValue({fieldId:'amount'});
+      var invoiceAmount = invoiceObj.getValue({
+        fieldId: 'amount'
+      });
+      log.debug('The invoice amount is: ', invoiceAmount);
       var invoiceinternalID = invoiceObj.save();
 
     } catch (e) {
@@ -337,7 +335,7 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
         value: invoiceinternalID
       });
 
-      if (invoiceAmount == 0) {
+      if (invoiceAmount == 0 || invoiceAmount == null) {
 
         amzioSettleTran.setValue({
           fieldId: 'custrecord_celigo_amzio_set_recond_trans',

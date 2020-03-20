@@ -160,18 +160,20 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
 
             log.debug('Object account is null: ', JSON.stringify(accountObject[tempOrigAcct]));
 
-            accountObject[tempOrigAcct] = {};
+            accountObject[tempOrigAcct] = {
+              "date": {}
+            };
 
             var temp = [];
             temp.push(tempPaymentId);
 
-            accountObject[tempOrigAcct].paymentid = temp;
-            accountObject[tempOrigAcct].date = tempDate;
-            accountObject[tempOrigAcct].destacct = tempDestAcct;
-            accountObject[tempOrigAcct].currency = tempCurrency;
-            accountObject[tempOrigAcct].marketplace = tempMarketplace;
-            accountObject[tempOrigAcct].debitamount = tempDebit;
-            accountObject[tempOrigAcct].creditamount = tempCredit;
+            accountObject[tempOrigAcct].date[tempDate].paymentid = temp;
+            // accountObject[tempOrigAcct].date = tempDate;
+            accountObject[tempOrigAcct].date[tempDate].destacct = tempDestAcct;
+            accountObject[tempOrigAcct].date[tempDate].currency = tempCurrency;
+            accountObject[tempOrigAcct].date[tempDate].marketplace = tempMarketplace;
+            accountObject[tempOrigAcct].date[tempDate].debitamount = tempDebit;
+            accountObject[tempOrigAcct].date[tempDate].creditamount = tempCredit;
             log.debug('New object has been created and looks like this: ', JSON.stringify(accountObject[tempOrigAcct]));
 
           } else {
@@ -195,16 +197,31 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
 
               log.debug('Object account is not null but date and currency do not match: ', JSON.stringify(accountObject[tempOrigAcct]));
 
-              var temp2 = [];
-              temp2.push(tempPaymentId);
+              var temp2 = {};
+              var key = tempDate;
+              log.debug('Print key: ', key);
 
-              accountObject[tempOrigAcct].paymentid = temp2;
-              accountObject[tempOrigAcct].date = tempDate;
-              accountObject[tempOrigAcct].destacct = tempDestAcct;
-              accountObject[tempOrigAcct].currency = tempCurrency;
-              accountObject[tempOrigAcct].marketplace = tempMarketplace;
-              accountObject[tempOrigAcct].debitamount = tempDebit;
-              accountObject[tempOrigAcct].creditamount = tempCredit;
+              accountObject[tempOrigAcct].date[tempDate].push({
+                'paymentid': temp2,
+                'date': tempDate,
+                'destacct': tempDestAcct,
+                'currency': tempCurrency,
+                'marketplace': tempMarketplace,
+                'debitamount': tempDebit,
+                'creditamount': tempCredit
+              });
+
+              log.debug('Print temp2 key: ', JSON.stringify(temp2[key]));
+
+              // temp2.push(tempPaymentId);
+
+              // accountObject[tempOrigAcct].paymentid = temp2;
+              // accountObject[tempOrigAcct].date = tempDate;
+              // accountObject[tempOrigAcct].destacct = tempDestAcct;
+              // accountObject[tempOrigAcct].currency = tempCurrency;
+              // accountObject[tempOrigAcct].marketplace = tempMarketplace;
+              // accountObject[tempOrigAcct].debitamount = tempDebit;
+              // accountObject[tempOrigAcct].creditamount = tempCredit;
               log.debug('Object new date looks like this: ', JSON.stringify(accountObject[tempOrigAcct]));
 
             }
