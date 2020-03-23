@@ -21,7 +21,9 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
     var revenueplanSearchObj = search.create({
       type: "revenueplan",
       filters: [
-        ["custrecordrsm_rev_plan_soure_client", "anyof", "@NONE@"]
+        ["custrecordrsm_rev_plan_soure_client", "anyof", "@NONE@"],
+        "OR",
+        ["custrecordrsm_rev_plan_cons_fore", "anyof", "@NONE@"]
       ],
       columns: [
         search.createColumn({
@@ -143,8 +145,15 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
     try {
 
       if (sourceclient == null || sourceclient == '' || sourceclient != revarrangementclientid) {
-        var revplanObj = record.load({type:'revenueplan', id:revplanid,isDynamic:true});
-        revplanObj.setValue({fieldId:'custrecordrsm_rev_plan_soure_client',value:revarrangementclientid});
+        var revplanObj = record.load({
+          type: 'revenueplan',
+          id: revplanid,
+          isDynamic: true
+        });
+        revplanObj.setValue({
+          fieldId: 'custrecordrsm_rev_plan_soure_client',
+          value: revarrangementclientid
+        });
         revplanObj.save();
 
         // var id = record.submitFields({
