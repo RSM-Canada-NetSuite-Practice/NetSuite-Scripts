@@ -143,9 +143,18 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
     try {
 
       if (sourceclient == null || sourceclient == '' || sourceclient != revarrangementclientid) {
-        var id = record.submitFields({type:'revenueplan',id:revplanid,values:revarrangementclientid});
-        log.debug('The source client has been set on record: ', id);
+        var revplanObj = record.load({type:'revenueplan', id:revplanid,isDynamic:true});
+        revplanObj.setValue({fieldId:'custrecordrsm_rev_plan_soure_client',value:revarrangementclientid});
+        revplanObj.save();
 
+        // var id = record.submitFields({
+        //   type: 'revenueplan',
+        //   id: revplanid,
+        //   values: {
+        //     custrecordrsm_rev_plan_soure_client: revarrangementclientid
+        //   }
+        // });
+        log.debug('The source client has been set on record: ', revplanObj);
       }
     } catch (e) {
       log.debug('Error', e.name + ' ' + e.message);
