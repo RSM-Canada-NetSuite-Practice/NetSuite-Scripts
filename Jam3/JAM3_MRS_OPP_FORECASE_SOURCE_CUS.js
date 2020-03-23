@@ -74,9 +74,9 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
     //   return true;
     // });
 
-    var res = revenueplanSearchObj.run().getRange(0, 100);
+    var res = customrecord_opp_anticipated_revSearchObj.run().getRange(0, 100);
     log.debug('getInputData', res.length + ' ' + JSON.stringify(res));
-    return revenueplanSearchObj;
+    return customrecord_opp_anticipated_revSearchObj;
 
   }
 
@@ -87,104 +87,51 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
 
     var oppforecastid = res.id;
     log.debug('The opportunity forecast plan id is: ', oppforecastid);
-    var oppforecastclient = res.values['custrecord_opportunity.entity'];
+    var oppforecastclient = res.values['entity.CUSTRECORD_OPPORTUNITY'].value;
     log.debug('The opportunity forecast client is: ', oppforecastclient);
-    var revarrangementnumber = (revenuearrangement.replace(/[^0-9\,]/g, ""));
-    log.debug('The revenue arrangement id is: ', revarrangementnumber);
-
-    var revenuearrangementSearchObj = search.create({
-      type: "revenuearrangement",
-      filters: [
-        ["type", "anyof", "RevArrng"],
-        "AND",
-        ["numbertext", "is", revarrangementnumber],
-        "AND",
-        ["mainline", "is", "T"]
-      ],
-      columns: [
-        search.createColumn({
-          name: "internalid",
-          label: "Internal ID"
-        }),
-        search.createColumn({
-          name: "tranid",
-          label: "Document Number"
-        }),
-        search.createColumn({
-          name: "entityid",
-          join: "customerMain",
-          label: "Name"
-        }),
-        search.createColumn({
-          name: "internalid",
-          join: "customerMain",
-          label: "Internal ID"
-        })
-      ]
-    });
-
-    var searchResultCount = revenuearrangementSearchObj.run().getRange({
-      start: 0,
-      end: 10
-    });
-
-    var revarrangementid = searchResultCount[0].id;
-    log.debug('The revenue arrangement internal id is: ', revarrangementid);
-
-    var revarrangementclientid = searchResultCount[0].getValue({
-      name: 'internalid',
-      join: 'customerMain'
-    });
-    log.debug('The client internal id is: ', revarrangementclientid);
-
-    var sourceclient = search.lookupFields({
-      type: 'revenueplan',
-      id: revplanid,
-      columns: 'custrecordrsm_rev_plan_soure_client'
-    }).values;
-    log.debug('The current revenue recognition plan source client is: ', sourceclient);
 
     try {
 
-      if (sourceclient == null || sourceclient == '' || sourceclient != revarrangementclientid) {
-        var revplanObj = record.load({
-          type: 'revenueplan',
-          id: revplanid,
+      var tempfore = search.lookupFields({
+        type: 'customrecord_opp_anticipated_rev',
+        id: oppforecastid,
+        columns: 'custrecordrsm_opp_rev_fore_cons_fore'
+      });
+
+      log.debug('The opportunity forecast field is: ', tempfore.custrecordrsm_opp_rev_fore_cons_fore);
+
+      if (tempfore.custrecordrsm_opp_rev_fore_cons_fore == null || tempfore.custrecordrsm_opp_rev_fore_cons_fore == '') {
+        var tempcusrecord = record.create({
+          type: 'customrecordrsm_cons_rev_forecast',
           isDynamic: true
         });
-        revplanObj.setValue({
-          fieldId: 'custrecordrsm_rev_plan_soure_client',
-          value: revarrangementclientid
+        log.debug('The consolidation record has been created: ', tempcusrecord);
+
+        tempcusrecord.setValue({
+          fieldId: 'custrecordrsm_cons_fore_client',
+          value: oppforecastclient
         });
-
-        log.debug('The source client has been set on record: ', revplanObj);
-
-        var tempfore = revplanObj.getValue({
-          fieldId: 'custrecordrsm_rev_plan_cons_fore'
+        tempcusrecord.setValue({
+          fieldId: 'custrecordrsm_cons_fore_opp_fore',
+          value: oppforecastid
         });
-
-        if (tempfore == null || tempfore == '') {
-          var tempcusrecord = record.create({
-            type: 'customrecordrsm_cons_rev_forecast',
-            isDynamic: true
-          });
-          tempcusrecord.setValue({
-            fieldId: 'custrecordrsm_cons_fore_client',
-            value: revarrangementclientid
-          });
-          tempcusrecord.setValue({
-            fieldId: 'custrecordcons_fore_rev_plan',
-            value: revplanid
-          });
-          log.debug('The custom record has been created: ', tempcusrecord);
-          var tempcusrecordid = tempcusrecord.save();
-          revplanObj.setValue({
-            fieldId: 'custrecordrsm_rev_plan_cons_fore',
-            value: tempcusrecordid
-          });
-          log.debug('The custom record has been saved with id: ', tempcusrecordid);
-        }
-        revplanObj.save();
+        log.debug('The custom record has been created with the following values: ', tempcusrecord);
+        var tempcusrecordid = tempcusrecord.save();
+        var tempOppForecastRecord = record.load({
+          type: 'customrecord_opp_anticipated_rev',
+          id: oppforecastid,
+          isDynamic: true
+        });
+        tempOppForecastRecord.setValue({
+          fieldId: 'custrecordrsm_opp_rev_fore_cons_fore',
+          value: tempcusrecordid
+        });
+        tempOppForecastRecord.setValue({
+          fieldId: 'custrecordrsm_cons_fore_trans_type',
+          value: 1,
+        });
+        var id2 = tempOppForecastRecord.save();
+        log.debug('The custom record has been saved with id: ', id2);
       }
     } catch (e) {
       log.debug('Error', e.name + ' ' + e.message);

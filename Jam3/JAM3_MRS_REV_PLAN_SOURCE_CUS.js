@@ -156,7 +156,7 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
         });
 
         log.debug('The source client has been set on record: ', revplanObj);
-        
+
         var tempfore = revplanObj.getValue({fieldId:'custrecordrsm_rev_plan_cons_fore'});
 
         if (tempfore == null || tempfore == '') {
@@ -171,6 +171,10 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
           tempcusrecord.setValue({
             fieldId: 'custrecordcons_fore_rev_plan',
             value: revplanid
+          });
+          tempcusrecord.setValue({
+            fieldId: 'custrecordrsm_cons_fore_trans_type',
+            value: 2,
           });
           log.debug('The custom record has been created: ', tempcusrecord);
           var tempcusrecordid = tempcusrecord.save();
