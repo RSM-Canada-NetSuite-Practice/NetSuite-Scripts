@@ -18,57 +18,58 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
 
   function getInputData() {
 
-    var revenueplanSearchObj = search.create({
-      type: "revenueplan",
+    var customrecord_opp_anticipated_revSearchObj = search.create({
+      type: "customrecord_opp_anticipated_rev",
       filters: [
-        ["custrecordrsm_rev_plan_soure_client", "anyof", "@NONE@"],
-        "OR",
-        ["custrecordrsm_rev_plan_cons_fore", "anyof", "@NONE@"]
+        ["custrecordrsm_opp_rev_fore_cons_fore", "anyof", "@NONE@"]
       ],
       columns: [
         search.createColumn({
-          name: "custrecordrsm_rev_plan_soure_client",
-          label: "Source Client"
+          name: "custrecord_opportunity",
+          label: "Opportunity"
         }),
         search.createColumn({
-          name: "recordnumber",
-          sort: search.Sort.ASC,
-          label: "Number"
+          name: "custrecordrsm_opp_rev_for_period_start",
+          label: "Period Start Date"
         }),
         search.createColumn({
-          name: "amount",
-          label: "Amount"
+          name: "custrecord_period",
+          label: "Period"
         }),
         search.createColumn({
-          name: "item",
-          label: "Item"
+          name: "custrecord_percent_anticipated_rev",
+          label: "Revenue Percent Forecast"
         }),
         search.createColumn({
-          name: "exchangerate",
-          label: "Exchange Rate"
+          name: "custrecord3",
+          label: "Opportunity Currency"
         }),
         search.createColumn({
-          name: "lineexchangerate",
-          label: "Line Exchange Rate"
+          name: "custrecord1",
+          label: "Opportunity Exchange Rate"
         }),
         search.createColumn({
-          name: "status",
-          label: "Status"
+          name: "custrecord2",
+          label: "Opportunity Amount (CAD)"
         }),
         search.createColumn({
-          name: "custrecordrsm_rev_plan_cons_fore",
+          name: "custrecord5",
+          label: "Opportunity Probability"
+        }),
+        search.createColumn({
+          name: "custrecordrsm_opp_rev_fore_cons_fore",
           label: "Consolidation Forecast Record"
         }),
         search.createColumn({
-          name: "revenuearrangement",
-          join: "revenueElement",
-          label: "Revenue Arrangement"
+          name: "entity",
+          join: "CUSTRECORD_OPPORTUNITY",
+          label: "Client"
         })
       ]
     });
-    // var searchResultCount = revenueplanSearchObj.runPaged().count;
-    // log.debug("revenueplanSearchObj result count", searchResultCount);
-    // revenueplanSearchObj.run().each(function(result) {
+    // var searchResultCount = customrecord_opp_anticipated_revSearchObj.runPaged().count;
+    // log.debug("customrecord_opp_anticipated_revSearchObj result count", searchResultCount);
+    // customrecord_opp_anticipated_revSearchObj.run().each(function(result) {
     //   // .run().each has a limit of 4,000 results
     //   return true;
     // });
@@ -84,9 +85,10 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
     log.debug('Map', context.value);
     var res = JSON.parse(context.value);
 
-    var revplanid = res.id;
-    log.debug('The revenue recognition plan id is: ', revplanid);
-    var revenuearrangement = res.values['revenuearrangement.revenueElement'];
+    var oppforecastid = res.id;
+    log.debug('The opportunity forecast plan id is: ', oppforecastid);
+    var oppforecastclient = res.values['custrecord_opportunity.entity'];
+    log.debug('The opportunity forecast client is: ', oppforecastclient);
     var revarrangementnumber = (revenuearrangement.replace(/[^0-9\,]/g, ""));
     log.debug('The revenue arrangement id is: ', revarrangementnumber);
 
@@ -156,8 +158,10 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
         });
 
         log.debug('The source client has been set on record: ', revplanObj);
-        
-        var tempfore = revplanObj.getValue({fieldId:'custrecordrsm_rev_plan_cons_fore'});
+
+        var tempfore = revplanObj.getValue({
+          fieldId: 'custrecordrsm_rev_plan_cons_fore'
+        });
 
         if (tempfore == null || tempfore == '') {
           var tempcusrecord = record.create({
