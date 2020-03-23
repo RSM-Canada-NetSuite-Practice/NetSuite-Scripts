@@ -155,15 +155,17 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
           value: revarrangementclientid
         });
         revplanObj.save();
-
-        // var id = record.submitFields({
-        //   type: 'revenueplan',
-        //   id: revplanid,
-        //   values: {
-        //     custrecordrsm_rev_plan_soure_client: revarrangementclientid
-        //   }
-        // });
         log.debug('The source client has been set on record: ', revplanObj);
+
+      if (custrecordrsm_rev_plan_cons_fore == null || custrecordrsm_rev_plan_cons_fore == '') {
+        var tempcusrecord = record.create({
+          type: 'customrecordrsm_cons_rev_forecast',
+          isDynamic: true
+        });
+        tempcusrecord.setValue({fieldId:'custrecordrsm_cons_fore_client',value:revarrangementclientid});
+        tempcusrecord.setValue({fieldId:'custrecordcons_fore_rev_plan',value:revplanid});
+        tempcusrecord.save();
+      }
       }
     } catch (e) {
       log.debug('Error', e.name + ' ' + e.message);
