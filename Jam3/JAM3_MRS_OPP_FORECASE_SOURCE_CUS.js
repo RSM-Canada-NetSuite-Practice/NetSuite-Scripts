@@ -21,7 +21,9 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
     var customrecord_opp_anticipated_revSearchObj = search.create({
       type: "customrecord_opp_anticipated_rev",
       filters: [
-        ["custrecordrsm_opp_rev_fore_cons_fore", "anyof", "@NONE@"]
+        ["custrecordrsm_opp_rev_fore_cons_fore", "anyof", "@NONE@"],
+        "OR",
+        ["custrecordrsm_opp_rev_fore_cons_fore.custrecordrsm_cons_fore_trans_type", "anyof", "@NONE@"]
       ],
       columns: [
         search.createColumn({
@@ -89,6 +91,8 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
     log.debug('The opportunity forecast plan id is: ', oppforecastid);
     var oppforecastclient = res.values['entity.CUSTRECORD_OPPORTUNITY'].value;
     log.debug('The opportunity forecast client is: ', oppforecastclient);
+    var oppconsrecordid = res.values.custrecordrsm_opp_rev_fore_cons_fore.value;
+    log.debug('The consolidation record id is: ', oppconsrecordid);
 
     try {
 
@@ -97,8 +101,14 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
         id: oppforecastid,
         columns: 'custrecordrsm_opp_rev_fore_cons_fore'
       });
+      var temptrantype = search.lookupFields({
+        type: 'customrecordrsm_cons_rev_forecast',
+        id: oppconsrecordid,
+        columns: 'custrecordrsm_cons_fore_trans_type'
+      });
 
       log.debug('The opportunity forecast field is: ', tempfore.custrecordrsm_opp_rev_fore_cons_fore);
+      log.debug('The consolidation transaction type is: ', temptrantype);
 
       if (tempfore.custrecordrsm_opp_rev_fore_cons_fore == null || tempfore.custrecordrsm_opp_rev_fore_cons_fore == '') {
         var tempcusrecord = record.create({
@@ -132,7 +142,20 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
         });
         var id2 = tempOppForecastRecord.save();
         log.debug('The custom record has been saved with id: ', id2);
+      } else if (temptrantype.custrecordrsm_cons_fore_trans_type == null || temptrantype.custrecordrsm_cons_fore_trans_type == '') {
+        var tempconsrecord = record.load({
+          type: 'customrecordrsm_cons_rev_forecast',
+          id: oppconsrecordid,
+          isDynamic: true
+        });
+        tempconsrecord.setValue({
+          fieldId: 'custrecordrsm_cons_fore_trans_type',
+          value: 1,
+        });
+        var id3 = tempconsrecord.save();
+        log.debug('The custom record has been saved with id: ', id3);
       }
+
     } catch (e) {
       log.debug('Error', e.name + ' ' + e.message);
     }
