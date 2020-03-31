@@ -10,7 +10,7 @@
  * Author: Nicolas Bean
  * Purpose: The purpose of this script is to delete Jam3 consolidated forecast records
  * Script: JAM3_MRS_MASS_DELETE_CONS_FORECAST_TRAN.js
- * Deploy: 
+ * Deploy:
  *
  *
  * ******************************************************************* */
@@ -74,7 +74,7 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
 
     var cons_rec_id = res.id;
 
-    log.debug('The Consolidated Transaction internal ID is: ', cus_rec_celigo_amzio_settle_internalid);
+    log.debug('The Consolidated Transaction internal ID is: ', cons_rec_id);
 
     try {
 
@@ -88,6 +88,7 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
       log.debug('Error reads: ', e.name + e.message);
 
     }
+  }
 
   function reduce(context) {
 
