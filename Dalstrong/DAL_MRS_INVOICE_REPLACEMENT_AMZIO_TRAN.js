@@ -44,6 +44,10 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
     103: 2,
   };
 
+  var invoicelocationMap = {
+    
+  };
+
 
   function getInputData() {
 

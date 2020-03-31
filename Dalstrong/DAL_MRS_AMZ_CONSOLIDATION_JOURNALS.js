@@ -145,9 +145,9 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
     journalRec.setCurrentSublistValue('line', 'account', consolidationAccount);
 
     if ((journalInfo.debitamount) != null && (journalInfo.debitamount) != '') {
-      journalRec.setCurrentSublistValue('line', 'credit', (journalInfo.debitamount).toFixed(2));
+      journalRec.setCurrentSublistValue('line', 'debit', (journalInfo.debitamount).toFixed(2));
     } else {
-      journalRec.setCurrentSublistValue('line', 'debit', (journalInfo.creditamount).toFixed(2));
+      journalRec.setCurrentSublistValue('line', 'credit', (journalInfo.creditamount).toFixed(2));
     }
     journalRec.commitLine('line');
 
@@ -155,9 +155,9 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
     journalRec.setCurrentSublistValue('line', 'account', journalInfo.destacct);
 
     if ((journalInfo.debitamount) != null && (journalInfo.debitamount) != '') {
-      journalRec.setCurrentSublistValue('line', 'debit', (journalInfo.debitamount).toFixed(2));
+      journalRec.setCurrentSublistValue('line', 'credit', (journalInfo.debitamount).toFixed(2));
     } else {
-      journalRec.setCurrentSublistValue('line', 'credit', (journalInfo.creditamount).toFixed(2));
+      journalRec.setCurrentSublistValue('line', 'debit', (journalInfo.creditamount).toFixed(2));
     }
     journalRec.commitLine('line');
 
