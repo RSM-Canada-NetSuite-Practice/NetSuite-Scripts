@@ -1,15 +1,15 @@
 /*******************************************************************
  *
  *
- * Name: DAL_SUE_MASS_DELETE_CELIGO_AMAZON_TRAN.js
+ * Name: JAM3_MRS_MASS_DELETE_CONS_FORECAST_TRAN.js
  * @NScriptType MapReduceScript
  * @NApiVersion 2.x
  * Version: 0.0.2
  *
  *
  * Author: Nicolas Bean
- * Purpose: The purpose of this script is to delete Celigo Amazon Settlement Transactions and their corresponding Fees & Prices
- * Script: DAL_SUE_MASS_DELETE_CELIGO_AMAZON_TRAN
+ * Purpose: The purpose of this script is to delete Jam3 consolidated forecast records
+ * Script: JAM3_MRS_MASS_DELETE_CONS_FORECAST_TRAN.js
  * Deploy: customdeployrsm_dal_sue_mass_delete_celi
  *
  *
