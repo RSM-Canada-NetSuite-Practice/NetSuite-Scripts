@@ -10,7 +10,7 @@
  * Author: Nicolas Bean
  * Purpose: The purpose of this script is to delete Jam3 consolidated forecast records
  * Script: JAM3_MRS_MASS_DELETE_CONS_FORECAST_TRAN.js
- * Deploy: customdeployrsm_dal_sue_mass_delete_celi
+ * Deploy: 
  *
  *
  * ******************************************************************* */
