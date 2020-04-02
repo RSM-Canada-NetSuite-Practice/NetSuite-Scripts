@@ -1,15 +1,15 @@
 /*******************************************************************
  *
  *
- * Name: JAM3_MRS_REV_PLAN_SOURCE_CUS.js
+ * Name: JAM3_MRS_OPP_FORECASE_SOURCE_CUS.js
  * @NScriptType MapReduceScript
  * @NApiVersion 2.x
  * Version: 0.0.1
  *
  *
  * Author: Nicolas Bean
- * Purpose: The purpose of this script is to keep the source customer updated on rev plans
- * Script: JAM3_MRS_REV_PLAN_SOURCE_CUS.js
+ * Purpose: The purpose of this script is to create the consolidation custom records for opportunity forecast records
+ * Script: JAM3_MRS_OPP_FORECASE_SOURCE_CUS.js
  * Deploy:
  *
  *
@@ -101,14 +101,14 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
         id: oppforecastid,
         columns: 'custrecordrsm_opp_rev_fore_cons_fore'
       });
-      var temptrantype = search.lookupFields({
-        type: 'customrecordrsm_cons_rev_forecast',
-        id: oppconsrecordid,
-        columns: 'custrecordrsm_cons_fore_trans_type'
-      });
+      // var temptrantype = search.lookupFields({
+      //   type: 'customrecordrsm_cons_rev_forecast',
+      //   id: oppconsrecordid,
+      //   columns: 'custrecordrsm_cons_fore_trans_type'
+      // });
 
       log.debug('The opportunity forecast field is: ', tempfore.custrecordrsm_opp_rev_fore_cons_fore);
-      log.debug('The consolidation transaction type is: ', temptrantype);
+      // log.debug('The consolidation transaction type is: ', temptrantype);
 
       if (tempfore.custrecordrsm_opp_rev_fore_cons_fore == null || tempfore.custrecordrsm_opp_rev_fore_cons_fore == '') {
         var tempcusrecord = record.create({
@@ -125,6 +125,10 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
           fieldId: 'custrecordrsm_cons_fore_opp_fore',
           value: oppforecastid
         });
+        tempcusrecord.setValue({
+          fieldId: 'custrecordrsm_cons_fore_trans_type',
+          value: 1,
+        });
         log.debug('The custom record has been created with the following values: ', tempcusrecord);
         var tempcusrecordid = tempcusrecord.save();
         var tempOppForecastRecord = record.load({
@@ -136,25 +140,22 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
           fieldId: 'custrecordrsm_opp_rev_fore_cons_fore',
           value: tempcusrecordid
         });
-        tempOppForecastRecord.setValue({
-          fieldId: 'custrecordrsm_cons_fore_trans_type',
-          value: 1,
-        });
         var id2 = tempOppForecastRecord.save();
         log.debug('The custom record has been saved with id: ', id2);
-      } else if (temptrantype.custrecordrsm_cons_fore_trans_type == null || temptrantype.custrecordrsm_cons_fore_trans_type == '') {
-        var tempconsrecord = record.load({
-          type: 'customrecordrsm_cons_rev_forecast',
-          id: oppconsrecordid,
-          isDynamic: true
-        });
-        tempconsrecord.setValue({
-          fieldId: 'custrecordrsm_cons_fore_trans_type',
-          value: 1,
-        });
-        var id3 = tempconsrecord.save();
-        log.debug('The custom record has been saved with id: ', id3);
       }
+      // else if (temptrantype.custrecordrsm_cons_fore_trans_type == null || temptrantype.custrecordrsm_cons_fore_trans_type == '') {
+      //   var tempconsrecord = record.load({
+      //     type: 'customrecordrsm_cons_rev_forecast',
+      //     id: oppconsrecordid,
+      //     isDynamic: true
+      //   });
+      //   tempconsrecord.setValue({
+      //     fieldId: 'custrecordrsm_cons_fore_trans_type',
+      //     value: 1,
+      //   });
+      //   var id3 = tempconsrecord.save();
+      //   log.debug('The custom record has been saved with id: ', id3);
+      // }
 
     } catch (e) {
       log.debug('Error', e.name + ' ' + e.message);
