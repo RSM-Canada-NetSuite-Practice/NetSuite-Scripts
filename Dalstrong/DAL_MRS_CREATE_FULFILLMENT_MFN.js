@@ -30,6 +30,10 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
       ],
       columns: [
         search.createColumn({
+          name: "datecreated",
+          label: "Date Created"
+        }),
+        search.createColumn({
           name: "trandate",
           label: "Date"
         }),
@@ -85,108 +89,36 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
     var so_id = res.id;
     log.debug('The Sales Order internal ID is: ', so_id);
 
+    var sodate = res.values.trandate;
+    log.debug('The Sales Order date is: ', sodate);
+
     var shortest_date = res.values.custbody1;
     log.debug('The shortest shipping date is: ', shortest_date);
 
     var longest_date = res.values.custbodyrsm_so_est_ship_date;
     log.debug('The longest shipping date is: ', longest_date);
 
-    var cashsaleSearchObj = search.create({
-      type: "cashsale",
-      filters: [
-        ["type", "anyof", "CashSale"],
-        "AND",
-        ["mainline", "is", "T"],
-        "AND",
-        ["poastext", "is", cus_rec_celigo_amzio_settle_merchant_order_id]
-      ],
-      columns: [
-        search.createColumn({
-          name: "internalid",
-          label: "Internal ID"
-        }),
-        search.createColumn({
-          name: "tranid",
-          label: "Document Number"
-        }),
-        search.createColumn({
-          name: "otherrefnum",
-          label: "PO/Cheque Number"
-        })
-      ]
+    var tempdate = new date();
+
+    var tempRec = record.transform({
+      fromType: 'salesorder',
+      fromId: so_id,
+      toType: 'itemfulfillment',
+      isDynamic: true
     });
 
-    var cashSaleResults = cashsaleSearchObj.run().getRange(0, 100);
-    log.debug('Cash Sale Search', cashSaleResults.length + ' ' + JSON.stringify(cashSaleResults));
-
-    var cus_rec_cash_sale_internal_id = cashSaleResults[0].id;
-
-    log.debug('The Cash Sale Internal ID is: ', cus_rec_cash_sale_internal_id);
-
-    // var cashSaleRec = record.load({type: 'cashsale', id: cus_rec_cash_sale_internal_id});
-    //
-    // log.debug('The Cash Sale has been successfully loaded: ', cus_rec_cash_sale_internal_id);
-    //
-    // cashSaleRec.setValue({fieldId:custbodyrsm_celigo_sett_tran,value:cus_rec_celigo_amzio_settle_internalid});
-    //
-    // cashSaleRec.save();
-
-    // log.debug('The Cash Sale has been successfully saved with Settlement Transaction: ', cus_rec_celigo_amzio_settle_internalid);
-
-    var amzioSettleTran = record.load({
-      type: 'customrecord_celigo_amzio_settle_trans',
-      id: cus_rec_celigo_amzio_settle_internalid
-    });
-
-    log.debug('The Settlement Transaction has been successfully loaded: ', cus_rec_celigo_amzio_settle_internalid);
-
-    amzioSettleTran.setValue({
-      fieldId: 'custrecord_celigo_amzio_set_parent_tran',
-      value: cus_rec_cash_sale_internal_id
-    });
-    amzioSettleTran.setValue({
-      fieldId: 'custrecord_celigo_amzio_set_trans_to_rec',
-      value: cus_rec_cash_sale_internal_id
-    });
-    amzioSettleTran.setValue({
-      fieldId: 'custrecord_celigo_amzio_set_recond_trans',
-      value: cus_rec_cash_sale_internal_id
-    });
-    amzioSettleTran.setValue({
-      fieldId: 'custrecord_celigo_amzio_set_exp_to_io',
-      value: true
-    });
-    amzioSettleTran.setValue({
-      fieldId: 'custrecord_celigo_amzio_set_recon_status',
-      value: 5
-    });
-
-    amzioSettleTran.save();
-
-    log.debug('The Settlement Transaction has been successfully saved with Cash Sale Transaction: ', cus_rec_cash_sale_internal_id);
-
-
+    if (tempdate == sodate) {
+      tempRec.setValue({
+        fieldId: 'date',
+        value: longest_date
+      });
+    }
+    tempRec.save();
   }
 
   function reduce(context) {
+    log.debug('Reduce');
 
-    //   var cus_rec_celigo_amzio_settlement_reduce_internalid = context.key;
-    //
-    //   try {
-    //
-    //     var transactionSettlement = record.delete({
-    //       type: 'customrecord_celigo_amzio_settle_trans',
-    //       id: cus_rec_celigo_amzio_settlement_reduce_internalid,
-    //     });
-    //
-    //   } catch (e) {
-    //
-    //     log.debug('Error reads: ', e.name + e.message);
-    //
-    //   }
-    //
-    //   log.debug('Reduce');
-    //
   }
 
   function summarize(context) {
