@@ -8,7 +8,7 @@
  *
  *
  * Author: Nicolas Bean
- * Purpose: The purpose of this script is to associate Shopify Cash Sale Transactions to the corresponding Celigo Amazon Settlement Transaction
+ * Purpose: The purpose of this script is to create item fulfillments for SO's from MFN
  * Script: DAL_MRS_CREATE_FULFILLMENT_MFN.js
  * Deploy:
  *
@@ -113,7 +113,8 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
         value: longest_date
       });
     }
-    tempRec.save();
+    var fulfillmentid = tempRec.save();
+    log.debug('The item fulfillment has been saved with id: ', fulfillmentid);
   }
 
   function reduce(context) {
