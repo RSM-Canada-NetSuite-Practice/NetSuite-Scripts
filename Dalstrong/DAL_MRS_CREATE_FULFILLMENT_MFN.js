@@ -26,7 +26,9 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
         "AND",
         ["status", "anyof", "SalesOrd:B"],
         "AND",
-        ["mainline", "is", "T"]
+        ["mainline", "is", "T"],
+        "AND",
+        ["internalid", "anyof", "527186"]
       ],
       columns: [
         search.createColumn({
