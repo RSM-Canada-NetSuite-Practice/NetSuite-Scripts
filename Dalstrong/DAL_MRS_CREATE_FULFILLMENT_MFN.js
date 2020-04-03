@@ -19,71 +19,60 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
 
   function getInputData() {
 
-    var customrecord_celigo_amzio_settle_transSearchObj = search.create({
-      type: "customrecord_celigo_amzio_settle_trans",
+    var salesorderSearchObj = search.create({
+      type: "salesorder",
       filters: [
-        ["custrecord_celigo_amzio_set_recond_trans", "anyof", "@NONE@"],
+        ["type", "anyof", "SalesOrd"],
         "AND",
-        ["custrecordrsm_marketplace_cus_tran_settl", "anyof", "15"]
+        ["status", "anyof", "SalesOrd:B"],
+        "AND",
+        ["mainline", "is", "T"]
       ],
       columns: [
         search.createColumn({
-          name: "name",
-          sort: search.Sort.ASC,
+          name: "trandate",
+          label: "Date"
+        }),
+        search.createColumn({
+          name: "tranid",
+          label: "Document Number"
+        }),
+        search.createColumn({
+          name: "postingperiod",
+          label: "Period"
+        }),
+        search.createColumn({
+          name: "entity",
           label: "Name"
         }),
         search.createColumn({
-          name: "custrecord_celigo_amzio_set_tran_type",
-          label: "Transaction Type"
+          name: "memo",
+          label: "Memo"
         }),
         search.createColumn({
-          name: "custrecord_celigo_amzio_set_order_id",
-          label: "Order Id"
+          name: "amount",
+          label: "Amount"
         }),
         search.createColumn({
-          name: "custrecord_celigo_amzio_set_mer_order_id",
-          label: "Merchant Order Id"
+          name: "custbody1",
+          label: "SHORTEST ETAIL ESTIMATED SHIP DATE"
         }),
         search.createColumn({
-          name: "custrecord_celigo_amzio_set_marketplace",
-          label: "Marketplace Name"
-        }),
-        search.createColumn({
-          name: "custrecordrsm_marketplace_cus_tran_settl",
-          label: "Marketplace"
-        }),
-        search.createColumn({
-          name: "custrecord_celigo_amzio_set_settlemnt_id",
-          label: "Settlement Id"
-        }),
-        search.createColumn({
-          name: "custrecord_celigo_amzio_set_recon_status",
-          label: "Status"
-        }),
-        search.createColumn({
-          name: "custrecord_celigo_amzio_set_tran_sub_tot",
-          label: "Net Revenue"
-        }),
-        search.createColumn({
-          name: "custrecord_celigo_amzio_set_tran_amount",
-          label: "Transaction Amount"
-        }),
-        search.createColumn({
-          name: "custrecord_celigo_amzio_set_recond_trans",
-          label: "NetSuite Transaction (Applied)"
+          name: "custbodyrsm_so_est_ship_date",
+          label: "LONGEST ETAIL ESTIMATED SHIP DATE"
         })
       ]
     });
-    // var searchResultCount = customrecord_celigo_amzio_settle_transSearchObj.runPaged().count;
-    // log.debug("customrecord_celigo_amzio_settle_transSearchObj result count", searchResultCount);
-    // customrecord_celigo_amzio_settle_transSearchObj.run().each(function(result) {
+    // var searchResultCount = salesorderSearchObj.runPaged().count;
+    // log.debug("salesorderSearchObj result count", searchResultCount);
+    // salesorderSearchObj.run().each(function(result) {
     //   // .run().each has a limit of 4,000 results
     //   return true;
     // });
 
-    var res = customrecord_celigo_amzio_settle_transSearchObj.run().getRange(0, 100);
+    var res = salesorderSearchObj.run().getRange(0, 100);
     log.debug('getInputData', res.length + ' ' + JSON.stringify(res));
-    return customrecord_celigo_amzio_settle_transSearchObj;
+    return salesorderSearchObj;
 
   }
 
@@ -93,13 +82,14 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
 
     var res = JSON.parse(context.value);
 
-    var cus_rec_celigo_amzio_settle_internalid = res.id;
+    var so_id = res.id;
+    log.debug('The Sales Order internal ID is: ', so_id);
 
-    log.debug('The Settlement Transaction internal ID is: ', cus_rec_celigo_amzio_settle_internalid);
+    var shortest_date = res.values.custbody1;
+    log.debug('The shortest shipping date is: ', shortest_date);
 
-    var cus_rec_celigo_amzio_settle_merchant_order_id = res.values.custrecord_celigo_amzio_set_mer_order_id.substring(1, 6);
-
-    log.debug('The Settlement Merchant Order ID is: ', cus_rec_celigo_amzio_settle_merchant_order_id);
+    var longest_date = res.values.custbodyrsm_so_est_ship_date;
+    log.debug('The longest shipping date is: ', longest_date);
 
     var cashsaleSearchObj = search.create({
       type: "cashsale",
@@ -143,15 +133,33 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
 
     // log.debug('The Cash Sale has been successfully saved with Settlement Transaction: ', cus_rec_celigo_amzio_settle_internalid);
 
-    var amzioSettleTran = record.load({type: 'customrecord_celigo_amzio_settle_trans', id: cus_rec_celigo_amzio_settle_internalid});
+    var amzioSettleTran = record.load({
+      type: 'customrecord_celigo_amzio_settle_trans',
+      id: cus_rec_celigo_amzio_settle_internalid
+    });
 
     log.debug('The Settlement Transaction has been successfully loaded: ', cus_rec_celigo_amzio_settle_internalid);
 
-    amzioSettleTran.setValue({fieldId:'custrecord_celigo_amzio_set_parent_tran',value:cus_rec_cash_sale_internal_id});
-    amzioSettleTran.setValue({fieldId:'custrecord_celigo_amzio_set_trans_to_rec',value:cus_rec_cash_sale_internal_id});
-    amzioSettleTran.setValue({fieldId:'custrecord_celigo_amzio_set_recond_trans',value:cus_rec_cash_sale_internal_id});
-    amzioSettleTran.setValue({fieldId:'custrecord_celigo_amzio_set_exp_to_io',value: true});
-    amzioSettleTran.setValue({fieldId:'custrecord_celigo_amzio_set_recon_status',value: 5});
+    amzioSettleTran.setValue({
+      fieldId: 'custrecord_celigo_amzio_set_parent_tran',
+      value: cus_rec_cash_sale_internal_id
+    });
+    amzioSettleTran.setValue({
+      fieldId: 'custrecord_celigo_amzio_set_trans_to_rec',
+      value: cus_rec_cash_sale_internal_id
+    });
+    amzioSettleTran.setValue({
+      fieldId: 'custrecord_celigo_amzio_set_recond_trans',
+      value: cus_rec_cash_sale_internal_id
+    });
+    amzioSettleTran.setValue({
+      fieldId: 'custrecord_celigo_amzio_set_exp_to_io',
+      value: true
+    });
+    amzioSettleTran.setValue({
+      fieldId: 'custrecord_celigo_amzio_set_recon_status',
+      value: 5
+    });
 
     amzioSettleTran.save();
 
