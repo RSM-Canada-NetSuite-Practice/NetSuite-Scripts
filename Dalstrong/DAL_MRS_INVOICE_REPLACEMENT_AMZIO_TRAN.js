@@ -45,7 +45,7 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
   };
 
   var invoicelocationMap = {
-    
+
   };
 
 
@@ -57,8 +57,10 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
         ["custrecord_celigo_amzio_set_recond_trans", "anyof", "@NONE@"],
         "AND",
         [
-          ["custrecord_celigo_amzio_set_mer_order_id", "startswith", "CONSUMER"], "OR", ["custrecord_celigo_amzio_set_mer_order_id", "startswith", "S"]
+          ["custrecord_celigo_amzio_set_order_id", "startswith", "CONSUMER"], "OR", ["custrecord_celigo_amzio_set_order_id", "startswith", "S"]
         ],
+        "AND",
+        ["custrecord_celigo_amzio_set_mer_order_id", "doesnotstartwith", "#"],
         "AND",
         ["custrecord_celigo_amzio_set_posted_date", "notonorbefore", "2020-01-31"],
         "AND",
@@ -257,33 +259,34 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
         log.debug('The Settlemetn Transaction Type is: ', JSON.stringify(amzioSettleTranInvoice[i].misctype));
 
         if (amzioSettleTranInvoice[i].sku != "" && amzioSettleTranInvoice[i].misctype != "ShipmentFees") {
-        log.debug('The If statement has been entered: ', JSON.stringify(amzioSettleTranInvoice[i].sku));
+          log.debug('The If statement has been entered: ', JSON.stringify(amzioSettleTranInvoice[i].sku));
 
-        //Lookup SKU InternalId
-        var itemSearchObj = search.create({
-          type: "item",
-          filters: [
-            ["name", "contains", amzioSettleTranInvoice[i].sku]
-          ],
-          columns: [
-            search.createColumn({
-              name: "internalid",
-              label: "Internal ID"
-            }),
-            search.createColumn({
-              name: "itemid",
-              label: "Name"
-            })
-          ]
-        });
+          //Lookup SKU InternalId
+          var itemSearchObj = search.create({
+            type: "item",
+            filters: [
+              ["custrecord_celigo_etail_alias_par_item.name", "contains", amzioSettleTranInvoice[i].sku]
+            ],
+            columns: [
+              search.createColumn({
+                name: "internalid",
+                label: "Internal ID"
+              }),
+              search.createColumn({
+                name: "name",
+                join: "CUSTRECORD_CELIGO_ETAIL_ALIAS_PAR_ITEM",
+                label: "Name"
+              })
+            ]
+          });
 
-        var searchResultCount = itemSearchObj.run().getRange({
-          start: 0,
-          end: 10
-        });
-        amzioSettleTranInvoice[i].skuinternalid = searchResultCount[0].id;
+          var searchResultCount = itemSearchObj.run().getRange({
+            start: 0,
+            end: 10
+          });
+          amzioSettleTranInvoice[i].skuinternalid = searchResultCount[0].id;
 
-        log.debug('Sku Internal ID is: ', amzioSettleTranInvoice[i].skuinternalid);
+          log.debug('Sku Internal ID is: ', amzioSettleTranInvoice[i].skuinternalid);
 
           invoiceObj.selectNewLine({
             sublistId: 'item'
