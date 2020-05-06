@@ -3,7 +3,7 @@
  *
  * Name: DAL_SUE_GU_INVOICE_CHECK.js
  * @NApiVersion 2.x
- * Script Type: UserEventScript
+ * @NScriptType UserEventScript
  * Version: 0.0.1
  *
  *
@@ -24,10 +24,13 @@ define(['N/record', 'N/search', 'N/log'],
         fieldId: 'shipstate'
       });
 
+      log.debug('Invoice: ', invoiceRec);
+      log.debug('The ship state is: ', invoiceShipState);
+
       if (invoiceShipState == "GU") {
 
         var numLines = invoiceRec.getLineCount({
-          sublistId: 'items',
+          sublistId: 'item',
         });
 
         log.debug({
@@ -37,11 +40,13 @@ define(['N/record', 'N/search', 'N/log'],
         for (var i = 0; i < numLines; i++) {
 
           taxline = invoiceRec.setSublistValue({
-            sublistId: 'items',
+            sublistId: 'item',
             fieldId: 'taxcode',
             line: i,
-            value: 16
+            value: 14
           });
+
+          log.debug('The tax code has been set for line: ', i);
         }
       }
     }
