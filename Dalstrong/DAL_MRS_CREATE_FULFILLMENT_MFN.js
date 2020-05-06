@@ -133,12 +133,12 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
         log.debug('Line committed: ', tempRec);
       }
 
-      if (todayDate != sodate) {
-        tempRec.setValue({
-          fieldId: 'trandate',
-          value: formattedDateString
-        });
-      }
+      // if (todayDate != sodate) {
+      //   tempRec.setValue({
+      //     fieldId: 'trandate',
+      //     value: formattedDateString
+      //   });
+      // }
       var fulfillmentid = tempRec.save();
       log.debug('The item fulfillment has been saved with id: ', fulfillmentid);
     } catch (e) {
