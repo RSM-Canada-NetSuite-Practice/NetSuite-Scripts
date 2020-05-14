@@ -8,75 +8,90 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
   function getInputData() {
 
     var invoiceSearchObj = search.create({
-      type: "invoice",
-      filters: [
-        ["type", "anyof", "CustInvc"],
-        "AND",
-        ["mainline", "is", "T"],
-        "AND",
-        ["cogs", "is", "F"],
-        "AND",
-        ["taxline", "is", "F"],
-        "AND",
-        ["shipping", "is", "F"],
-        "AND",
-        ["createdfrom", "anyof", "@NONE@"],
-        "AND",
-        ["formulanumeric: CASE WHEN {trandate} <> {custrecord_celigo_amzio_set_parent_tran.custrecord_celigo_amzio_set_posted_date} THEN 1 ELSE 0 END", "equalto", "1"],
-        "AND",
-        ["custrecord_celigo_amzio_set_parent_tran.custrecord_celigo_amzio_set_tran_type", "anyof", "1"]
-      ],
-      columns: [
-        search.createColumn({
-          name: "internalid",
-          label: "Internal ID"
-        }),
-        search.createColumn({
-          name: "trandate",
-          label: "Inv Date"
-        }),
-        search.createColumn({
-          name: "datecreated",
-          label: "Date Created"
-        }),
-        search.createColumn({
-          name: "custrecord_celigo_amzio_set_tran_type",
-          join: "CUSTRECORD_CELIGO_AMZIO_SET_PARENT_TRAN",
-          label: "Type"
-        }),
-        search.createColumn({
-          name: "custrecord_celigo_amzio_set_posted_date",
-          join: "CUSTRECORD_CELIGO_AMZIO_SET_PARENT_TRAN",
-          label: "Posted Date"
-        }),
-        search.createColumn({
-          name: "type",
-          label: "Type"
-        }),
-        search.createColumn({
-          name: "tranid",
-          label: "Document Number"
-        }),
-        search.createColumn({
-          name: "entity",
-          label: "Name"
-        }),
-        search.createColumn({
-          name: "memo",
-          label: "Memo"
-        }),
-        search.createColumn({
-          name: "amount",
-          label: "Amount"
-        })
-      ]
-    });
-    // var searchResultCount = invoiceSearchObj.runPaged().count;
-    // log.debug("invoiceSearchObj result count",searchResultCount);
-    // invoiceSearchObj.run().each(function(result){
-    //    // .run().each has a limit of 4,000 results
-    //    return true;
-    // });
+   type: "invoice",
+   filters:
+   [
+      ["type","anyof","CustInvc"],
+      "AND",
+      ["mainline","is","T"],
+      "AND",
+      ["cogs","is","F"],
+      "AND",
+      ["taxline","is","F"],
+      "AND",
+      ["shipping","is","F"],
+      "AND",
+      ["createdfrom","anyof","@NONE@"],
+      "AND",
+      ["custrecord_celigo_amzio_set_parent_tran.custrecord_celigo_amzio_set_tran_type","anyof","1"],
+      "AND",
+      ["custbodyrsm_manual_inv_date_change","is","F"],
+      "AND",
+      ["max(formulanumeric: CASE WHEN max({custrecord_celigo_amzio_set_parent_tran.custrecord_celigo_amzio_set_posted_date}) <> max({trandate}) THEN 1 ELSE 0 END)","equalto","1"]
+   ],
+   columns:
+   [
+      // search.createColumn({
+      //    name: "datecreated",
+      //    summary: "GROUP",
+      //    label: "Date Created"
+      // }),
+      search.createColumn({
+         name: "internalid",
+         summary: "GROUP",
+         label: "Internal ID"
+      }),
+      search.createColumn({
+         name: "trandate",
+         summary: "GROUP",
+         label: "Inv Date"
+      }),
+      search.createColumn({
+         name: "custrecord_celigo_amzio_set_tran_type",
+         join: "CUSTRECORD_CELIGO_AMZIO_SET_PARENT_TRAN",
+         summary: "GROUP",
+         label: "Type"
+      }),
+      search.createColumn({
+         name: "custrecord_celigo_amzio_set_posted_date",
+         join: "CUSTRECORD_CELIGO_AMZIO_SET_PARENT_TRAN",
+         summary: "MAX",
+         label: "Posted Date"
+      }),
+      // search.createColumn({
+      //    name: "type",
+      //    summary: "GROUP",
+      //    label: "Type"
+      // }),
+      // search.createColumn({
+      //    name: "tranid",
+      //    summary: "GROUP",
+      // //    label: "Document Number"
+      // }),
+      // search.createColumn({
+      //    name: "entity",
+      //    summary: "GROUP",
+      //    label: "Name"
+      // }),
+      // search.createColumn({
+      //    name: "cseg1",
+      //    summary: "GROUP",
+      //    label: "Marketplace"
+      // }),
+      // search.createColumn({
+      //    name: "amount",
+      //    summary: "SUM",
+      //    label: "Amount"
+      // })
+   ]
+});
+
+// var searchResultCount = invoiceSearchObj.runPaged().count;
+// log.debug("invoiceSearchObj result count",searchResultCount);
+// invoiceSearchObj.run().each(function(result){
+//    // .run().each has a limit of 4,000 results
+//    return true;
+// });
 
     var res = invoiceSearchObj.run().getRange(0, 100);
     log.debug('getInputData', res.length + ' ' + JSON.stringify(res));
@@ -90,11 +105,11 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
 
     var res = JSON.parse(context.value);
 
-    var invoiceID = res.id;
+    var invoiceID = res.values["GROUP(internalid)"].value;
 
     log.debug('Invoice internal id is: ', invoiceID);
 
-    var invoiceDate = res.values["custrecord_celigo_amzio_set_posted_date.CUSTRECORD_CELIGO_AMZIO_SET_PARENT_TRAN"];
+    var invoiceDate = res.values["MAX(custrecord_celigo_amzio_set_posted_date.CUSTRECORD_CELIGO_AMZIO_SET_PARENT_TRAN)"];
 
     log.debug('New invoice date is: ', invoiceDate);
 

@@ -19,21 +19,27 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
 
   function getInputData() {
 
-    var bulkownershiptransferSearchObj = search.create({
-      type: "bulkownershiptransfer",
+    var transactionSearchObj = search.create({
+      type: "transaction",
       filters: [
-        ["type", "anyof", "OwnTrnsf"],
+        ["type", "anyof", "ItemRcpt", "OwnTrnsf"],
+        "AND",
+        ["shipmentnumber", "noneof", "@NONE@"],
         "AND",
         ["mainline", "is", "T"]
       ],
       columns: [
         search.createColumn({
-          name: "tranid",
-          label: "Document Number"
+          name: "trandate",
+          label: "Date"
         }),
         search.createColumn({
           name: "type",
           label: "Type"
+        }),
+        search.createColumn({
+          name: "tranid",
+          label: "Document Number"
         }),
         search.createColumn({
           name: "shipmentnumber",
@@ -41,9 +47,9 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
         })
       ]
     });
-    var searchResultCount = bulkownershiptransferSearchObj.runPaged().count;
-    log.debug("bulkownershiptransferSearchObj result count", searchResultCount);
-    bulkownershiptransferSearchObj.run().each(function(result) {
+    var searchResultCount = transactionSearchObj.runPaged().count;
+    log.debug("transactionSearchObj result count", searchResultCount);
+    transactionSearchObj.run().each(function(result) {
       // .run().each has a limit of 4,000 results
       return true;
     });
