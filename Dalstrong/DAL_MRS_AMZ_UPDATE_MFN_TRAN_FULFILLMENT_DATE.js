@@ -54,7 +54,7 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
           search.createColumn({
              name: "custrecord_celigo_amzio_set_posted_date",
              join: "CUSTRECORD_CELIGO_AMZIO_SET_PARENT_TRAN",
-             summary: "GROUP",
+             summary: "MAX",
              label: "Posted Date"
           }),
           search.createColumn({
@@ -99,7 +99,7 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
 
     log.debug('Fulfillment internal id is: ', fulfillmentID);
 
-    var fulfillmentDate = res.values["GROUP(custrecord_celigo_amzio_set_posted_date.CUSTRECORD_CELIGO_AMZIO_SET_PARENT_TRAN)"];
+    var fulfillmentDate = res.values["MAX(custrecord_celigo_amzio_set_posted_date.CUSTRECORD_CELIGO_AMZIO_SET_PARENT_TRAN)"];
 
     log.debug('New fulfillment date is: ', fulfillmentDate);
 
