@@ -8,80 +8,78 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
   function getInputData() {
 
     var salesorderSearchObj = search.create({
-       type: "salesorder",
-       filters:
-       [
-          ["type","anyof","SalesOrd"],
-          "AND",
-          ["applyinglinktype","anyof","ShipRcpt"],
-          "AND",
-          ["formulanumeric: CASE WHEN {applyingtransaction.trandate} <> {custrecord_celigo_amzio_set_parent_tran.custrecord_celigo_amzio_set_posted_date} THEN 1 ELSE 0 END","equalto","1"]
-       ],
-       columns:
-       [
-          search.createColumn({
-             name: "trandate",
-             summary: "GROUP",
-             label: "Date"
-          }),
-          search.createColumn({
-             name: "type",
-             summary: "GROUP",
-             label: "Type"
-          }),
-          search.createColumn({
-             name: "tranid",
-             summary: "GROUP",
-             label: "Document Number"
-          }),
-          search.createColumn({
-             name: "entity",
-             summary: "GROUP",
-             label: "Name"
-          }),
-          search.createColumn({
-             name: "internalid",
-             join: "CUSTRECORD_CELIGO_AMZIO_SET_PARENT_TRAN",
-             summary: "GROUP",
-             label: "Internal ID"
-          }),
-          search.createColumn({
-             name: "custrecord_celigo_amzio_set_order_id",
-             join: "CUSTRECORD_CELIGO_AMZIO_SET_PARENT_TRAN",
-             summary: "GROUP",
-             label: "Order Id"
-          }),
-          search.createColumn({
-             name: "custrecord_celigo_amzio_set_posted_date",
-             join: "CUSTRECORD_CELIGO_AMZIO_SET_PARENT_TRAN",
-             summary: "MAX",
-             label: "Posted Date"
-          }),
-          search.createColumn({
-             name: "internalid",
-             join: "applyingTransaction",
-             summary: "GROUP",
-             label: "Internal ID"
-          }),
-          search.createColumn({
-             name: "tranid",
-             join: "applyingTransaction",
-             summary: "GROUP",
-             label: "Document Number"
-          }),
-          search.createColumn({
-             name: "trandate",
-             join: "applyingTransaction",
-             summary: "GROUP",
-             label: "Date"
-          })
-       ]
+      type: "salesorder",
+      filters: [
+        ["type", "anyof", "SalesOrd"],
+        "AND",
+        ["applyinglinktype", "anyof", "ShipRcpt"],
+        "AND",
+        ["max(formulanumeric: CASE WHEN {applyingtransaction.trandate} <> {custrecord_celigo_amzio_set_parent_tran.custrecord_celigo_amzio_set_posted_date} THEN 1 ELSE 0 END)", "equalto", "1"]
+      ],
+      columns: [
+        search.createColumn({
+          name: "trandate",
+          summary: "GROUP",
+          label: "Date"
+        }),
+        search.createColumn({
+          name: "type",
+          summary: "GROUP",
+          label: "Type"
+        }),
+        search.createColumn({
+          name: "tranid",
+          summary: "GROUP",
+          label: "Document Number"
+        }),
+        search.createColumn({
+          name: "entity",
+          summary: "GROUP",
+          label: "Name"
+        }),
+        search.createColumn({
+          name: "internalid",
+          join: "CUSTRECORD_CELIGO_AMZIO_SET_PARENT_TRAN",
+          summary: "GROUP",
+          label: "Internal ID"
+        }),
+        search.createColumn({
+          name: "custrecord_celigo_amzio_set_order_id",
+          join: "CUSTRECORD_CELIGO_AMZIO_SET_PARENT_TRAN",
+          summary: "GROUP",
+          label: "Order Id"
+        }),
+        search.createColumn({
+          name: "custrecord_celigo_amzio_set_posted_date",
+          join: "CUSTRECORD_CELIGO_AMZIO_SET_PARENT_TRAN",
+          summary: "MAX",
+          label: "Posted Date"
+        }),
+        search.createColumn({
+          name: "internalid",
+          join: "applyingTransaction",
+          summary: "GROUP",
+          label: "Internal ID"
+        }),
+        search.createColumn({
+          name: "tranid",
+          join: "applyingTransaction",
+          summary: "GROUP",
+          label: "Document Number"
+        }),
+        search.createColumn({
+          name: "trandate",
+          join: "applyingTransaction",
+          summary: "GROUP",
+          label: "Date"
+        })
+      ]
     });
     // var searchResultCount = salesorderSearchObj.runPaged().count;
-    // log.debug("salesorderSearchObj result count",searchResultCount);
-    // salesorderSearchObj.run().each(function(result){
-    //    // .run().each has a limit of 4,000 results
-    //    return true;
+    // log.debug("salesorderSearchObj result count", searchResultCount);
+    // salesorderSearchObj.run().each(function(result) {
+    //   // .run().each has a limit of 4,000 results
+    //   return true;
     // });
     var res = salesorderSearchObj.run().getRange(0, 100);
     log.debug('getInputData', res.length + ' ' + JSON.stringify(res));
