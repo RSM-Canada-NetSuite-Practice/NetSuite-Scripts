@@ -5,7 +5,7 @@
 
 /**
  * @NApiVersion 2.x
- * @NScriptType UserEventScript
+ * @NScriptType ClientScript
  * @NModuleScope Public
  */
 
@@ -26,23 +26,50 @@ define(['N/currentRecord', 'N/record', 'N/log'], function(currentRecord, record,
     var chart_no = recCurrent.getValue({
       fieldId: 'custentity_nlfc_chart_number_custom_enti'
     });
+
+    log.debug('Chart no: ', chart_no);
+
     var lastname = recCurrent.getValue({
       fieldId: 'lastname'
     });
+
+    log.debug('Last name: ', lastname);
+
     var firstname = recCurrent.getValue({
       fieldId: 'firstname'
     });
 
-    var clientid = chart_no + " " + lastname + "," + firstname;
+    log.debug('First name: ', firstname);
 
-    var customerid = recCurrent.setValue({
-      fieldId: 'entityid',
-      value: clientid
-    });
+    var upcasefirstname = firstname.toUpperCase();
+    var upcaselastname = lastname.toUpperCase();
 
-    log.debug('The new customer id is: ',customerid);
+    log.debug('Name is: ', upcasefirstname + " " + upcaselastname);
 
+    var clientid = chart_no + " " + upcaselastname + "," + upcasefirstname;
+
+    log.debug('Client id is: ', clientid);
+
+    try {
+
+      var customerid = recCurrent.setValue({
+        fieldId: 'entityid',
+        value: clientid
+      });
+
+      log.debug('The new customer id is: ', customerid);
+
+      return true;
+
+    } catch (e) {
+
+      log.debug('Error reads: ', e.name + e.message);
+
+      return false;
+
+    }
   }
+
   return {
 
     saveRecord: saveRecord
