@@ -14,7 +14,17 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
         "AND",
         ["applyinglinktype", "anyof", "ShipRcpt"],
         "AND",
-        ["max(formulanumeric: CASE WHEN {applyingtransaction.trandate} <> {custrecord_celigo_amzio_set_parent_tran.custrecord_celigo_amzio_set_posted_date} THEN 1 ELSE 0 END)", "equalto", "1"]
+        ["cogs", "is", "F"],
+        "AND",
+        ["shipping", "is", "F"],
+        "AND",
+        ["taxline", "is", "F"],
+        "AND",
+        ["custrecord_celigo_amzio_set_parent_tran.custrecord_celigo_amzio_set_tran_type", "anyof", "1"],
+        "AND",
+        ["mainline", "is", "F"],
+        "AND",
+        ["max(formulanumeric: CASE WHEN max({custrecord_celigo_amzio_set_parent_tran.custrecord_celigo_amzio_set_posted_date}) <> max({applyingtransaction.trandate}) THEN 1 ELSE 0 END)", "equalto", "1"]
       ],
       columns: [
         search.createColumn({
@@ -70,16 +80,16 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
         search.createColumn({
           name: "trandate",
           join: "applyingTransaction",
-          summary: "GROUP",
+          summary: "MAX",
           label: "Date"
         })
       ]
     });
     // var searchResultCount = salesorderSearchObj.runPaged().count;
-    // log.debug("salesorderSearchObj result count", searchResultCount);
-    // salesorderSearchObj.run().each(function(result) {
-    //   // .run().each has a limit of 4,000 results
-    //   return true;
+    // log.debug("salesorderSearchObj result count",searchResultCount);
+    // salesorderSearchObj.run().each(function(result){
+    //    // .run().each has a limit of 4,000 results
+    //    return true;
     // });
     var res = salesorderSearchObj.run().getRange(0, 100);
     log.debug('getInputData', res.length + ' ' + JSON.stringify(res));
