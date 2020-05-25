@@ -1,16 +1,16 @@
 /*******************************************************************
  *
  *
- * Name: DAL_SUE_MASS_DELETE_TRAN.js
+ * Name: DAL_MRS_MASS_DELETE_CREDIT_MEMO_TRAN.js
  * @NScriptType MapReduceScript
  * @NApiVersion 2.x
  * Version: 0.0.2
  *
  *
  * Author: Nicolas Bean
- * Purpose: The purpose of this script is to delete Transactions
- * Script: DAL_SUE_MASS_DELETE_TRAN
- * Deploy: DAL_SUE_MASS_DELETE_TRAN
+ * Purpose: The purpose of this script is to delete Credit Memo Transactions
+ * Script: DAL_MRS_MASS_DELETE_CREDIT_MEMO_TRAN
+ * Deploy: DAL_MRS_MASS_DELETE_CREDIT_MEMO_TRAN
  *
  *
  * ******************************************************************* */
@@ -19,89 +19,44 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
 
   function getInputData() {
 
-    var customerpaymentSearchObj = search.create({
-      type: "customerpayment",
-      filters: [
-        ["type", "anyof", "CustPymt"],
-        "AND",
-        ["cseg1", "anyof", "5", "8", "7", "9", "10", "6"],
-        "AND",
-        ["mainline", "is", "T"]
-      ],
-      columns: [
-        search.createColumn({
-          name: "ordertype",
-          sort: search.Sort.ASC,
-          label: "Order Type"
-        }),
-        search.createColumn({
-          name: "mainline",
-          label: "*"
-        }),
-        search.createColumn({
-          name: "trandate",
-          label: "Date"
-        }),
-        search.createColumn({
-          name: "asofdate",
-          label: "As-Of Date"
-        }),
-        search.createColumn({
-          name: "postingperiod",
-          label: "Period"
-        }),
-        search.createColumn({
-          name: "taxperiod",
-          label: "Tax Period"
-        }),
-        search.createColumn({
-          name: "type",
-          label: "Type"
-        }),
-        search.createColumn({
-          name: "tranid",
-          label: "Document Number"
-        }),
-        search.createColumn({
-          name: "entity",
-          label: "Name"
-        }),
-        search.createColumn({
-          name: "account",
-          label: "Account"
-        }),
-        search.createColumn({
-          name: "memo",
-          label: "Memo"
-        }),
-        search.createColumn({
-          name: "amount",
-          label: "Amount"
-        }),
-        search.createColumn({
-          name: "custbody_11187_pref_entity_bank",
-          label: "Preferred Entity Bank"
-        }),
-        search.createColumn({
-          name: "custbody_11724_pay_bank_fees",
-          label: "Vendor Bank Fees"
-        }),
-        search.createColumn({
-          name: "custbody_11724_bank_fee",
-          label: "Bank Fee"
-        })
-      ]
-    });
-    // var searchResultCount = customerpaymentSearchObj.runPaged().count;
-    // log.debug("customerpaymentSearchObj result count", searchResultCount);
-    // customerpaymentSearchObj.run().each(function(result) {
-    //   // .run().each has a limit of 4,000 results
-    //   return true;
-    // });
+    var creditmemoSearchObj = search.create({
+   type: "creditmemo",
+   filters:
+   [
+      ["type","anyof","CustCred"],
+      "AND",
+      ["cseg1","anyof","5","8","7","9","10","6"],
+      "AND",
+      ["mainline","is","F"],
+      "AND",
+      ["cogs","is","F"],
+      "AND",
+      ["taxline","is","F"],
+      "AND",
+      ["shipping","is","F"]
+   ],
+   columns:
+   [
+      search.createColumn({name: "trandate", label: "Date"}),
+      search.createColumn({name: "type", label: "Type"}),
+      search.createColumn({name: "tranid", label: "Document Number"}),
+      search.createColumn({name: "entity", label: "Name"}),
+      search.createColumn({name: "account", label: "Account"}),
+      search.createColumn({name: "memo", label: "Memo"}),
+      search.createColumn({name: "amount", label: "Amount"}),
+      search.createColumn({name: "appliedtotransaction", label: "Applied To Transaction"})
+   ]
+});
+//var searchResultCount = creditmemoSearchObj.runPaged().count;
+//log.debug("creditmemoSearchObj result count",searchResultCount);
+//creditmemoSearchObj.run().each(function(result){
+   // .run().each has a limit of 4,000 results
+//   return true;
+//});
 
-    var res = customerpaymentSearchObj.run().getRange(0, 100);
+    var res = creditmemoSearchObj.run().getRange(0, 100);
     log.debug('getInputData', res.length + ' ' + JSON.stringify(res));
-    return customerpaymentSearchObj;
+    return creditmemoSearchObj;
 
   }
 
@@ -123,12 +78,10 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
         isDynamic: true
       });
 
-      var lines = credit_memo.getLineCount({
-        sublistId: 'apply'
-      });
+      var lines = credit_memo.getLineCount({sublistId:'apply'});
       log.debug('The lines are:', lines);
 
-      for (var i = 0; i < lines.length; i++) {
+      for (var i = 0; i < lines; i++) {
         log.debug('For loop has been entered ', i);
         var templine = credit_memo.selectLine({
           sublistId: 'apply',
@@ -146,16 +99,18 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
           sublistId: 'apply'
         });
 
-      }
-
       credit_memo.save();
+      log.debug('The record has been saved', credit_memo);
 
       var id = record.delete({
-        type: 'customerpayment',
+        type: 'creditmemo',
         id: tranid,
       });
-
       log.debug('The Transaction has been deleted: ', id);
+
+    }
+
+
 
     } catch (e) {
 

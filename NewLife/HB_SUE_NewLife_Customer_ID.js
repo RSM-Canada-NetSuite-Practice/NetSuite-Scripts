@@ -46,7 +46,7 @@ define(['N/currentRecord', 'N/record', 'N/log'], function(currentRecord, record,
 
     log.debug('Name is: ', upcasefirstname + " " + upcaselastname);
 
-    var clientid = chart_no + " " + upcaselastname + "," + upcasefirstname;
+    var clientid = chart_no + " " + upcaselastname + ", " + upcasefirstname;
 
     log.debug('Client id is: ', clientid);
 
