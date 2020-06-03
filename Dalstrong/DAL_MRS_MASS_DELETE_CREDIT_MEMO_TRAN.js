@@ -87,17 +87,21 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
           sublistId: 'apply',
           line: i
         });
-        log.debug('Looping on line: ', templine);
+        log.debug('Looping on line: ', i);
         var tempsublistvalue = credit_memo.setCurrentSublistValue({
           sublistId: 'apply',
           fieldId: 'apply',
           value: false,
           ignoreFieldChange: true
         });
+
+        credit_memo.setCurrentSublistValue({sublistId:'apply',fieldId:'amount',value:0});
+
         log.debug('Set sublist value: ', tempsublistvalue);
         credit_memo.commitLine({
           sublistId: 'apply'
         });
+    }
 
       credit_memo.save();
       log.debug('The record has been saved', credit_memo);
@@ -107,10 +111,6 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
         id: tranid,
       });
       log.debug('The Transaction has been deleted: ', id);
-
-    }
-
-
 
     } catch (e) {
 

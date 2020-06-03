@@ -117,39 +117,6 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
 
     try {
 
-      var credit_memo = record.load({
-        type: 'creditmemo',
-        id: tranid,
-        isDynamic: true
-      });
-
-      var lines = credit_memo.getLineCount({
-        sublistId: 'apply'
-      });
-      log.debug('The lines are:', lines);
-
-      for (var i = 0; i < lines.length; i++) {
-        log.debug('For loop has been entered ', i);
-        var templine = credit_memo.selectLine({
-          sublistId: 'apply',
-          line: i
-        });
-        log.debug('Looping on line: ', templine);
-        var tempsublistvalue = credit_memo.setCurrentSublistValue({
-          sublistId: 'apply',
-          fieldId: 'apply',
-          value: false,
-          ignoreFieldChange: true
-        });
-        log.debug('Set sublist value: ', tempsublistvalue);
-        credit_memo.commitLine({
-          sublistId: 'apply'
-        });
-
-      }
-
-      credit_memo.save();
-
       var id = record.delete({
         type: 'customerpayment',
         id: tranid,
