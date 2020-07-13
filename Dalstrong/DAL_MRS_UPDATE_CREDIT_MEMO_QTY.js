@@ -20,99 +20,63 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
   function getInputData() {
 
     var creditmemoSearchObj = search.create({
-      type: "creditmemo",
-      filters: [
-        ["type", "anyof", "CustCred"],
+     type: "creditmemo",
+     filters:
+     [
+        ["type","anyof","CustCred"],
         "AND",
-        ["mainline", "is", "F"],
+        ["mainline","is","F"],
         "AND",
-        ["account", "anyof", "434"],
+        ["account","anyof","434"],
         "AND",
-        ["custbody_celigo_etail_channel", "anyof", "101"],
+        ["custbody_celigo_etail_channel","anyof","101"],
         "AND",
-        ["quantity", "equalto", "0"]
-      ],
-      columns: [
+        ["quantity","equalto","0"]
+     ],
+     columns:
+     [
+        search.createColumn({name: "trandate", label: "Date"}),
+        search.createColumn({name: "postingperiod", label: "Period"}),
+        search.createColumn({name: "type", label: "Type"}),
+        search.createColumn({name: "tranid", label: "Document Number"}),
+        search.createColumn({name: "entity", label: "Name"}),
+        search.createColumn({name: "item", label: "Item"}),
+        search.createColumn({name: "quantity", label: "Quantity"}),
+        search.createColumn({name: "account", label: "Account"}),
+        search.createColumn({name: "memo", label: "Memo"}),
+        search.createColumn({name: "amount", label: "Amount"}),
+        search.createColumn({name: "fxamount", label: "Amount (Foreign Currency)"}),
+        search.createColumn({name: "line", label: "Line ID"}),
+        search.createColumn({name: "lineuniquekey", label: "Line Unique Key"}),
+        search.createColumn({name: "linesequencenumber", label: "Line Sequence Number"}),
         search.createColumn({
-          name: "trandate",
-          label: "Date"
+           name: "line",
+           join: "createdFrom",
+           label: "Invoice Line ID"
         }),
         search.createColumn({
-          name: "postingperiod",
-          label: "Period"
+           name: "lineuniquekey",
+           join: "createdFrom",
+           label: "Invoice Line Unique Key"
         }),
         search.createColumn({
-          name: "type",
-          label: "Type"
+           name: "linesequencenumber",
+           join: "createdFrom",
+           label: "Invoice Line Sequence Number"
         }),
         search.createColumn({
-          name: "tranid",
-          label: "Document Number"
-        }),
-        search.createColumn({
-          name: "entity",
-          label: "Name"
-        }),
-        search.createColumn({
-          name: "item",
-          label: "Item"
-        }),
-        search.createColumn({
-          name: "quantity",
-          label: "Quantity"
-        }),
-        search.createColumn({
-          name: "account",
-          label: "Account"
-        }),
-        search.createColumn({
-          name: "memo",
-          label: "Memo"
-        }),
-        search.createColumn({
-          name: "amount",
-          label: "Amount"
-        }),
-        search.createColumn({
-          name: "line",
-          label: "Line ID"
-        }),
-        search.createColumn({
-          name: "lineuniquekey",
-          label: "Line Unique Key"
-        }),
-        search.createColumn({
-          name: "linesequencenumber",
-          label: "Line Sequence Number"
-        }),
-        search.createColumn({
-          name: "line",
-          join: "createdFrom",
-          label: "Invoice Line ID"
-        }),
-        search.createColumn({
-          name: "lineuniquekey",
-          join: "createdFrom",
-          label: "Invoice Line Unique Key"
-        }),
-        search.createColumn({
-          name: "linesequencenumber",
-          join: "createdFrom",
-          label: "Invoice Line Sequence Number"
-        }),
-        search.createColumn({
-          name: "internalid",
-          join: "createdFrom",
-          label: "Invoice Internal ID"
+           name: "internalid",
+           join: "createdFrom",
+           label: "Invoice Internal ID"
         })
-      ]
-    });
-    // var searchResultCount = creditmemoSearchObj.runPaged().count;
-    // log.debug("creditmemoSearchObj result count",searchResultCount);
-    // creditmemoSearchObj.run().each(function(result){
-    //    // .run().each has a limit of 4,000 results
-    //    return true;
-    // });
+     ]
+  });
+  // var searchResultCount = creditmemoSearchObj.runPaged().count;
+  // log.debug("creditmemoSearchObj result count",searchResultCount);
+  // creditmemoSearchObj.run().each(function(result){
+  //    // .run().each has a limit of 4,000 results
+  //    return true;
+  // });
 
     var res = creditmemoSearchObj.run().getRange(0, 100);
     log.debug('getInputData', res.length + ' ' + JSON.stringify(res));
@@ -127,6 +91,7 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
     var res = JSON.parse(context.value);
 
     var tranid = res.id;
+    var tranamount = res.values.fxamount * -1;
     var lineid = res.values.linesequencenumber;
     var invoiceid = res.values['internalid.createdFrom'].value;
 
@@ -135,77 +100,40 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
     try {
 
       var invoiceSearchObj = search.create({
-        type: "invoice",
-        filters: [
-          ["type", "anyof", "CustInvc"],
-          "AND",
-          ["internalidnumber", "anyof", invoiceid],
-          "AND",
-          ["cogs", "is", "F"],
-          "AND",
-          ["taxline", "is", "F"],
-          "AND",
-          ["shipping", "is", "F"],
-          "AND",
-          ["mainline", "is", "F"],
-          "AND",
-          ["linesequencenumber", "equalto", lineid]
-        ],
-        columns: [
-          search.createColumn({
-            name: "trandate",
-            label: "Date"
-          }),
-          search.createColumn({
-            name: "postingperiod",
-            label: "Period"
-          }),
-          search.createColumn({
-            name: "type",
-            label: "Type"
-          }),
-          search.createColumn({
-            name: "tranid",
-            label: "Document Number"
-          }),
-          search.createColumn({
-            name: "entity",
-            label: "Name"
-          }),
-          search.createColumn({
-            name: "item",
-            label: "Item"
-          }),
-          search.createColumn({
-            name: "quantity",
-            label: "Quantity"
-          }),
-          search.createColumn({
-            name: "account",
-            label: "Account"
-          }),
-          search.createColumn({
-            name: "memo",
-            label: "Memo"
-          }),
-          search.createColumn({
-            name: "amount",
-            label: "Amount"
-          }),
-          search.createColumn({
-            name: "lineuniquekey",
-            label: "Line Unique Key"
-          }),
-          search.createColumn({
-            name: "line",
-            label: "Line ID"
-          }),
-          search.createColumn({
-            name: "linesequencenumber",
-            label: "Line Sequence Number"
-          })
-        ]
-      });
+   type: "invoice",
+   filters:
+   [
+      ["type","anyof","CustInvc"],
+      "AND",
+      ["internalid","anyof",invoiceid],
+      "AND",
+      ["cogs","is","F"],
+      "AND",
+      ["taxline","is","F"],
+      "AND",
+      ["shipping","is","F"],
+      "AND",
+      ["mainline","is","F"],
+      "AND",
+      ["linesequencenumber","equalto",lineid]
+   ],
+   columns:
+   [
+      search.createColumn({name: "trandate", label: "Date"}),
+      search.createColumn({name: "postingperiod", label: "Period"}),
+      search.createColumn({name: "type", label: "Type"}),
+      search.createColumn({name: "tranid", label: "Document Number"}),
+      search.createColumn({name: "entity", label: "Name"}),
+      search.createColumn({name: "item", label: "Item"}),
+      search.createColumn({name: "quantity", label: "Quantity"}),
+      search.createColumn({name: "account", label: "Account"}),
+      search.createColumn({name: "memo", label: "Memo"}),
+      search.createColumn({name: "amount", label: "Amount"}),
+      search.createColumn({name: "lineuniquekey", label: "Line Unique Key"}),
+      search.createColumn({name: "line", label: "Line ID"}),
+      search.createColumn({name: "linesequencenumber", label: "Line Sequence Number"})
+   ]
+});
 
       var searchResultCount = invoiceSearchObj.run().getRange({
         start: 0,
@@ -213,7 +141,8 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
       });
       log.debug('The search result is: ', searchResultCount);
 
-      invoiceqty = searchResultCount[0].values.quantity;
+      invoiceqty = searchResultCount[0].getValue({name:'quantity'});
+
       log.debug('The new credit memo quantity is: ', invoiceqty);
 
       var credit_memo = record.load({
@@ -221,25 +150,28 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
         id: tranid,
         isDynamic: true
       });
+      log.debug('Record has been loaded: ', credit_memo);
 
       var linenumber = credit_memo.findSublistLineWithValue({
         sublistId: 'item',
-        fieldId: 'linesequencenumber',
+        fieldId: 'line',
         value: lineid
       });
+      log.debug('The line number is: ', linenumber);
 
       var templine = credit_memo.selectLine({
         sublistId: 'item',
         line: linenumber
       });
-      log.debug('Setting line: ', lineid);
+      log.debug('Setting line: ', templine );
 
-      var tempsublistvalue = credit_memo.setCurrentSublistValue({
+      var tempqty = credit_memo.setCurrentSublistValue({
         sublistId: 'item',
         fieldId: 'quantity',
         value: invoiceqty,
       });
-      log.debug('Set sublist value: ', tempsublistvalue);
+      var tempamt = credit_memo.setCurrentSublistValue({sublistId:'item',fieldId:'amount',value:tranamount});
+      log.debug('Set sublist value: ', tempqty + " " + tempamt);
 
       credit_memo.commitLine({
         sublistId: 'item'
