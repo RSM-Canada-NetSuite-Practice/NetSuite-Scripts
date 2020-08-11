@@ -23,7 +23,7 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
       filters: [
         ["custrecordrsm_rev_plan_soure_client", "anyof", "@NONE@"],
         "OR",
-        ["custrecordrsm_rev_plan_cons_fore", "anyof", "@NONE@"]
+        ["custrecordrev_plan_exec_producer", "anyof", "@NONE@"]
       ],
       columns: [
         search.createColumn({
@@ -63,7 +63,12 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
           name: "revenuearrangement",
           join: "revenueElement",
           label: "Revenue Arrangement"
-        })
+        }),
+        search.createColumn({
+          name: "custentity_jam3_exec_producer",
+          join: "customer",
+          label: "Executive Producer"
+        }),
       ]
     });
     // var searchResultCount = revenueplanSearchObj.runPaged().count;
@@ -89,6 +94,8 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
     var revenuearrangement = res.values['revenuearrangement.revenueElement'];
     var revarrangementnumber = (revenuearrangement.replace(/[^0-9\,]/g, ""));
     log.debug('The revenue arrangement id is: ', revarrangementnumber);
+    var clientexecproducer = res.values['custentity_jam3_exec_producer.customer'];
+    log.debug('The executive producer is: ', clientexecproducer);
 
     var revenuearrangementSearchObj = search.create({
       type: "revenuearrangement",
@@ -154,10 +161,13 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
           fieldId: 'custrecordrsm_rev_plan_soure_client',
           value: revarrangementclientid
         });
+        revplanObj.setValue({fieldId:'custrecordrev_plan_exec_producer',value:clientexecproducer});
 
-        log.debug('The source client has been set on record: ', revplanObj);
+        log.debug('The source client and executive producer has been set on record: ', revplanObj);
 
-        var tempfore = revplanObj.getValue({fieldId:'custrecordrsm_rev_plan_cons_fore'});
+        var tempfore = revplanObj.getValue({
+          fieldId: 'custrecordrsm_rev_plan_cons_fore'
+        });
 
         if (tempfore == null || tempfore == '') {
           var tempcusrecord = record.create({
