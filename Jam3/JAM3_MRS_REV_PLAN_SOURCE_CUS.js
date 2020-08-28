@@ -23,7 +23,9 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
       filters: [
         ["custrecordrsm_rev_plan_soure_client", "anyof", "@NONE@"],
         "OR",
-        ["custrecordrev_plan_exec_producer", "anyof", "@NONE@"]
+        ["custrecordrsm_rev_plan_cons_fore", "anyof", "@NONE@"],
+        "OR",
+        ["custrecordrev_plan_exec_producer", "anyof", "@NONE@"],
       ],
       columns: [
         search.createColumn({
@@ -94,7 +96,7 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
     var revenuearrangement = res.values['revenuearrangement.revenueElement'];
     var revarrangementnumber = (revenuearrangement.replace(/[^0-9\,]/g, ""));
     log.debug('The revenue arrangement id is: ', revarrangementnumber);
-    var clientexecproducer = res.values['custentity_jam3_exec_producer.customer'];
+    var clientexecproducer = res.values['custentity_jam3_exec_producer.customer'].value;
     log.debug('The executive producer is: ', clientexecproducer);
 
     var revenuearrangementSearchObj = search.create({
