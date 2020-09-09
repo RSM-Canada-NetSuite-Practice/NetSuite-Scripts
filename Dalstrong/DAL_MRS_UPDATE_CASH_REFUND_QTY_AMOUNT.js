@@ -77,6 +77,10 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
           label: "Account (Main)"
         }),
         search.createColumn({
+          name: "fxamount",
+          label: "Amount (Foreign Currency)"
+        }),
+        search.createColumn({
           name: "amount",
           label: "Refund Amount"
         }),
@@ -88,6 +92,11 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
           name: "amount",
           join: "createdFrom",
           label: "Amount"
+        }),
+        search.createColumn({
+          name: "fxamount",
+          join: "createdFrom",
+          label: "Amount (Foreign Currency)"
         }),
         search.createColumn({
           name: "internalid",
@@ -131,10 +140,10 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
     var res = JSON.parse(context.value);
 
     var tranid = res.id;
-    var tranamount = res.values.amount * -1;
+    var tranamount = res.values.fxamount * -1;
     var cashsaleid = res.values['internalid.createdFrom'].value;
 
-    log.debug('The transaction informations are: ', tranid + " " + tranamount + " " + invoiceid);
+    log.debug('The transaction informations are: ', tranid + " " + tranamount + " " + cashsaleid);
 
     try {
 
@@ -146,7 +155,7 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
 
       log.debug('The Cash Sale has been successfully loaded: ', cashsaleid);
 
-      var cashsalelinecount = caashsale.getLineCount({
+      var cashsalelinecount = cashsale.getLineCount({
         sublistId: 'item'
       });
 
@@ -156,7 +165,7 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
 
       for (var i = 0; i < cashsalelinecount; i++) {
 
-        cashsaleid.selectLine({
+        cashsale.selectLine({
           sublistId: 'item',
           line: i
         });
@@ -164,38 +173,37 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
         log.debug('Looping on line: ', i);
 
         cashsaletran[i] = {
-          'sku': cashsaletran.getCurrentSublistValue({
+          'sku': cashsale.getCurrentSublistValue({
             sublistId: 'item',
             fieldId: 'item'
           }),
-          'qty': cashsaletran.getCurrentSublistValue({
+          'qty': cashsale.getCurrentSublistValue({
             sublistId: 'item',
             fieldId: 'quantity'
           }),
-          'orderid': cashsaletran.getCurrentSublistValue({
+          'orderid': cashsale.getCurrentSublistValue({
             sublistId: 'item',
             fieldId: 'custcol_celigo_etail_order_line_id'
           }),
-          'amount': cashsaletran.getCurrentSublistValue({
+          'amount': cashsale.getCurrentSublistValue({
             sublistId: 'item',
             fieldId: 'amount'
           }),
-          'taxcode': cashsaletran.getCurrentSublistValue({
+          'taxcode': cashsale.getCurrentSublistValue({
             sublistId: 'item',
             fieldId: 'taxcode'
           }),
-          'taxrate': cashsaletran.getCurrentSublistValue({
+          'taxrate': cashsale.getCurrentSublistValue({
             sublistId: 'item',
             fieldId: 'taxrate1'
           }),
         };
+
+        log.debug('The Cash Sale is: ', JSON.stringify(cashsaletran[i]));
+        log.debug('The Cash Sale SKU is: ', JSON.stringify(cashsaletran[i].sku));
+        log.debug('The Cash Sale Tax Code is: ', JSON.stringify(cashsaletran[i].taxcode));
+        log.debug('The new cash refund quantity is: ', JSON.stringify(cashsaletran[i].qty));
       }
-
-      log.debug('The Cash Sale Item is: ', JSON.stringify(cashsaletran[i]));
-      log.debug('The Cash Sale SKU is: ', JSON.stringify(cashsaletran[i].sku));
-      log.debug('The Cash Sale Tax Code is: ', JSON.stringify(cashsaletran[i].taxcode));
-
-      log.debug('The new cash refund quantity is: ', JSON.stringify(cashsaletran[i].qty));
 
       var cash_refund = record.load({
         type: 'cashrefund',
@@ -221,7 +229,7 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
 
       }
 
-      for (var k = 0; k < cashrefundlinecount; k++) {
+      for (var k = 0; k < cashsalelinecount; k++) {
 
         var linenumber = cash_refund.selectNewLine({
           sublistId: 'item'
@@ -263,47 +271,54 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
       }
 
       var newcashrefundamount = cash_refund.getValue({
-        fieldId: 'amount'
+        fieldId: 'total'
       });
-      var adjustmentamount = tranamonut - (newcashrefundamount * -1);
+      var adjustmentamount = tranamount - newcashrefundamount;
+      var adjustmentamountround = adjustmentamount.toFixed(2);
+      log.debug('The original transaction amount is: ', tranamount + ' - ' + 'The new refund amount: ' + newcashrefundamount + ' // The new ajustment amount is: ' + adjustmentamountround);
 
-      var linenumberadjustment = cash_refund.selectNewLine({
-        sublistId: 'item'
-      });
 
-      cash_refund.setCurrentSublistValue({
-        sublistId: 'item',
-        fieldId: 'item',
-        value: 1602
-      });
+      if (adjustmentamountround != 0) {
 
-      cash_refund.setCurrentSublistValue({
-        sublistId: 'item',
-        fieldId: 'quantity',
-        value: 1
-      });
+        var linenumberadjustment = cash_refund.selectNewLine({
+          sublistId: 'item'
+        });
 
-      cash_refund.setCurrentSublistValue({
-        sublistId: 'item',
-        fieldId: 'amount',
-        value: linenumberadjustment
-      });
+        cash_refund.setCurrentSublistValue({
+          sublistId: 'item',
+          fieldId: 'item',
+          value: 1602
+        });
 
-      cash_refund.setCurrentSublistValue({
-        sublistId: 'item',
-        fieldId: 'taxcode',
-        value: cashsaletran[i].taxcode
-      });
+        cash_refund.setCurrentSublistValue({
+          sublistId: 'item',
+          fieldId: 'quantity',
+          value: 1
+        });
 
-      cash_refund.setCurrentSublistValue({
-        sublistId: 'item',
-        fieldId: 'taxrate1',
-        value: cashsaletran[i].taxrate1
-      });
+        cash_refund.setCurrentSublistValue({
+          sublistId: 'item',
+          fieldId: 'amount',
+          value: adjustmentamountround
+        });
 
-      cash_refund.commitLine({
-        sublistId: 'item'
-      });
+        cash_refund.setCurrentSublistValue({
+          sublistId: 'item',
+          fieldId: 'taxcode',
+          value: cashsaletran[0].taxcode
+        });
+
+        cash_refund.setCurrentSublistValue({
+          sublistId: 'item',
+          fieldId: 'taxrate1',
+          value: cashsaletran[0].taxrate1
+        });
+
+        cash_refund.commitLine({
+          sublistId: 'item'
+        });
+
+      }
 
       cash_refund.save();
       log.debug('The record has been saved', cash_refund);

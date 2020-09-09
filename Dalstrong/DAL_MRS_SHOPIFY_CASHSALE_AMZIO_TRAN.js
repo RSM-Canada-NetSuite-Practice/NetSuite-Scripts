@@ -108,7 +108,7 @@ define(['N/file', 'N/search', 'N/record'], function(file, search, record) {
         "AND",
         ["mainline", "is", "T"],
         "AND",
-        ["poastext", "is", cus_rec_celigo_amzio_settle_merchant_order_id]
+        ["poastext", "contains", cus_rec_celigo_amzio_settle_merchant_order_id]
       ],
       columns: [
         search.createColumn({
