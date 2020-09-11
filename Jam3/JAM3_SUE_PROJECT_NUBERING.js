@@ -5,70 +5,69 @@
 
 /**
  * @NApiVersion 2.x
- * @NScriptType ClientScript
+ * @NScriptType UserEventScript
  * @NModuleScope Public
  */
 
-define(['N/currentRecord', 'N/record', 'N/log'], function(currentRecord, record, log) {
+define(['N/record', 'N/log', 'N/search'], function(record, log, search) {
 
-  var projectnumbering = {
-    32: 2,
-    27: 0,
+  var projectstatusmap = {
     5: 1,
     29: 1,
     31: 1,
     3: 1,
+    32: 2,
     33: 1,
+    27: 0,
     34: 1,
     36: 1
   };
 
-  var projectvalidation = {
-    32: 3,
-    27: 1,
-    5: 2,
-    29: 2,
-    31: 2,
-    3: 2,
-    33: 2,
-    34: 2,
-    36: 2
-  };
-
-  function saveRecord(context) {
+  function beforeSubmit(context) {
 
     log.debug({
-      title: 'saveRecord initiated'
+      title: 'beforeSubmit initiated'
     });
 
-    var recCurrent = currentRecord.get();
-    log.debug('recCurrent has been set ' + recCurrent);
+    var recCurrent = context.newRecord;
+    log.debug('recCurrent has been set ', recCurrent);
+
+    var jobID = recCurrent.id;
+    log.debug('The project id is: ', jobID);
+
+    var autoname = recCurrent.setValue({fieldId:'autoname',value: false});
+
+    var projectstatus = recCurrent.getValue({
+      fieldId: 'entitystatus'
+    });
+    log.debug('The project status is: ', projectstatus);
 
     var id = recCurrent.getValue({
       fieldId: 'entityid'
     });
+    log.debug('The entity id is: ', id);
 
-    var projectstatus = recCurrent.getValue({fieldId:'entitystatus'});
-    log.debug('The project status is: ', projectstatus);
-
-    tempid = id.substring(0,1);
+    var tempid = parseFloat(id.substring(0, 1));
     log.debug('The tempid is: ', tempid);
 
-    if (projectvalidation[projectstatus] != tempid) {
+    var searchresultid = projectstatusmap[projectstatus];
+    log.debug('The search result id is: ', searchresultid);
+
+    if (tempid == null || tempid != '' || tempid == 'T') {
 
       var jobSearchObj = search.create({
         type: "job",
         filters: [
           [
-            ["status", "anyof", "32"], "AND", ["entityid", "startswith", "3"]
-          ],
-          "OR",
-          [
             ["status", "anyof", "27"], "AND", ["entityid", "startswith", "1"]
           ],
           "OR",
           [
-            ["status", "anyof", "5", "29", "31", "3", "33", "36", "34"], "AND", ["entityid", "startswith", "2"]
+            ["status", "anyof", "32"], "AND", ["entityid", "startswith", "3"]
+          ],
+          "OR",
+          [
+            ["status", "anyof", "5", "29", "31", "3", "33", "34", "36"], "AND", ["entityid", "startswith", "2"]
           ]
         ],
         columns: [
@@ -91,23 +90,29 @@ define(['N/currentRecord', 'N/record', 'N/log'], function(currentRecord, record,
         start: 0,
         end: 10
       });
+      log.debug('The search result count is: ', searchResultCount);
 
-      var tempprojectid = projectnumbering[projectstatus];
-      log.debug('The current project id is: ', id);
-      var nextinteger = searchResultCount[tempprojectid].id + 1;
-      log.debug('The next project ID is: ', nextinteger);
-
-      var chart_no = recCurrent.getValue({
-        fieldId: 'custentity_nlfc_chart_number_custom_enti'
+      var tempprojectid = searchResultCount[searchresultid].getValue({
+        name: 'MAX(entityid)'
       });
+      log.debug('The temp project id is: ', tempprojectid);
+
+      var tempnextinteger = parseFloat(searchResultCount[searchresultid].getValue({
+        name: 'entityid',
+        summary: 'MAX'
+      })).toFixed(0);
+      var nextinteger = parseInt(tempnextinteger) + 1;
+      var tempnewid = "" + nextinteger;
+      log.debug('The next project ID is: ', nextinteger);
+      log.debug('The new project id in string is: ', tempnewid);
+
 
       try {
 
         var projectid = recCurrent.setValue({
           fieldId: 'entityid',
-          value: nextinteger
+          value: tempnewid
         });
-
         log.debug('The new project id is: ', projectid);
 
         return true;
@@ -119,12 +124,14 @@ define(['N/currentRecord', 'N/record', 'N/log'], function(currentRecord, record,
         return false;
 
       }
+    } else {
+      return true;
     }
   }
 
   return {
 
-    saveRecord: saveRecord
+    beforeSubmit: beforeSubmit
 
   };
 
