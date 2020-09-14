@@ -5,6 +5,12 @@
 
 define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, record, currency) {
 
+  var trantypemap = {
+    'CustInvc': 'invoice',
+    'CustRfnd': 'refund',
+    'CustCred': 'creditmemo'
+  };
+
   function getInputData() {
 
     var transactionSearchObj = search.create({
@@ -13,17 +19,17 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
        [
           [["type","anyof","CustInvc"],"AND",["mainline","is","T"],"AND",["cogs","is","F"],"AND",["taxline","is","F"],"AND",["shipping","is","F"],"AND",["createdfrom","anyof","@NONE@"],"AND",["custrecord_celigo_amzio_set_parent_tran.custrecord_celigo_amzio_set_tran_type","anyof","1"],"AND",["custbodyrsm_manual_inv_date_change","is","F"]],
           "OR",
-          [["type","anyof","CashRfnd","CustCred"],"AND",["mainline","is","T"],"AND",["custrecord_celigo_amzio_set_parent_tran.custrecord_celigo_amzio_set_tran_type","anyof","2"]],
+          [["type","anyof","CustCred","CustRfnd"],"AND",["mainline","is","T"],"AND",["custbody_celigo_amzio_order_tran_link.custrecord_celigo_amzio_set_tran_type","anyof","2"],"AND",["trandate","onorafter","2020-09-01"]],
           "AND",
-          ["max(formulanumeric: CASE WHEN max({custrecord_celigo_amzio_set_parent_tran.custrecord_celigo_amzio_set_posted_date}) <> max({trandate}) THEN 1 ELSE 0 END)","equalto","1"]
+          ["max(formulanumeric: CASE WHEN max({custrecord_celigo_amzio_set_parent_tran.custrecord_celigo_amzio_set_posted_date}) <> max({trandate}) OR max({custbody_celigo_amzio_order_tran_link.custrecord_celigo_amzio_set_posted_date}) <> max({trandate}) THEN 1 ELSE 0 END)","equalto","1"]
        ],
        columns:
        [
-          search.createColumn({
-             name: "datecreated",
-             summary: "GROUP",
-             label: "Date Created"
-          }),
+          // search.createColumn({
+          //    name: "datecreated",
+          //    summary: "GROUP",
+          //    label: "Date Created"
+          // }),
           search.createColumn({
              name: "internalid",
              summary: "GROUP",
@@ -35,22 +41,22 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
              label: "Tran Date"
           }),
           search.createColumn({
-             name: "custrecord_celigo_amzio_set_tran_type",
-             join: "CUSTRECORD_CELIGO_AMZIO_SET_PARENT_TRAN",
+             name: "formulatext",
              summary: "GROUP",
+             formula: "CASE WHEN {custrecord_celigo_amzio_set_parent_tran.custrecord_celigo_amzio_set_tran_type} IS NULL THEN {custbody_celigo_amzio_order_tran_link.custrecord_celigo_amzio_set_tran_type} ELSE {custrecord_celigo_amzio_set_parent_tran.custrecord_celigo_amzio_set_tran_type} END",
              label: "Type"
           }),
           search.createColumn({
-             name: "custrecord_celigo_amzio_set_posted_date",
-             join: "CUSTRECORD_CELIGO_AMZIO_SET_PARENT_TRAN",
+             name: "formuladate",
              summary: "MAX",
-             label: "Posted Date"
+             formula: "CASE WHEN max({custrecord_celigo_amzio_set_parent_tran.custrecord_celigo_amzio_set_posted_date}) IS NULL THEN max({custbody_celigo_amzio_order_tran_link.custrecord_celigo_amzio_set_posted_date}) ELSE max({custrecord_celigo_amzio_set_parent_tran.custrecord_celigo_amzio_set_posted_date}) END",
+             label: "Formula (Date)"
           }),
-          // search.createColumn({
-          //    name: "type",
-          //    summary: "GROUP",
-          //    label: "Type"
-          // }),
+          search.createColumn({
+             name: "type",
+             summary: "GROUP",
+             label: "Type"
+          }),
           // search.createColumn({
           //    name: "tranid",
           //    summary: "GROUP",
@@ -92,23 +98,24 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
 
     var res = JSON.parse(context.value);
 
-    var invoiceID = res.values["GROUP(internalid)"].value;
+    var tranid = res.values["GROUP(internalid)"].value;
+    log.debug('Transaction internal id is: ', tranid);
 
-    log.debug('Invoice internal id is: ', invoiceID);
+    var trandate = res.values["MAX(formuladate)"];
+    log.debug('New transaction date is: ', trandate);
 
-    var invoiceDate = res.values["MAX(custrecord_celigo_amzio_set_posted_date.CUSTRECORD_CELIGO_AMZIO_SET_PARENT_TRAN)"];
-
-    log.debug('New invoice date is: ', invoiceDate);
+    var trantype = res.values["GROUP(type)"].value;
+    log.debug('The transaction type is: ', trantype);
 
     var id = record.submitFields({
-      type: 'invoice',
-      id: invoiceID,
+      type: trantypemap[trantype],
+      id: tranid,
       values: {
-        trandate: invoiceDate
+        trandate: trandate
       }
     });
 
-    log.debug('Date successfully changed on invoice: ', id);
+    log.debug('Date successfully changed on transaction: ', id);
 
   }
 
