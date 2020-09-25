@@ -7,7 +7,7 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
 
   var trantypemap = {
     'CustInvc': 'invoice',
-    'CustRfnd': 'refund',
+    'CustRfnd': 'customerrefund',
     'CustCred': 'creditmemo'
   };
 

@@ -25,6 +25,8 @@ define(['N/record', 'N/log', 'N/search'], function(record, log, search) {
 
   function beforeSubmit(context) {
 
+    if (context.type == context.UserEventType.CREATE) {
+
     log.debug({
       title: 'beforeSubmit initiated'
     });
@@ -52,8 +54,6 @@ define(['N/record', 'N/log', 'N/search'], function(record, log, search) {
 
     var searchresultid = projectstatusmap[projectstatus];
     log.debug('The search result id is: ', searchresultid);
-
-    if (tempid == null || tempid != '' || tempid == 'T') {
 
       var jobSearchObj = search.create({
         type: "job",
