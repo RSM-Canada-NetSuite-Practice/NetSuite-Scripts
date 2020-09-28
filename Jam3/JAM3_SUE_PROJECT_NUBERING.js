@@ -20,7 +20,8 @@ define(['N/record', 'N/log', 'N/search'], function(record, log, search) {
     33: 1,
     27: 0,
     34: 1,
-    36: 1
+    36: 1,
+    35: 2
   };
 
   function beforeSubmit(context) {
@@ -44,13 +45,13 @@ define(['N/record', 'N/log', 'N/search'], function(record, log, search) {
     });
     log.debug('The project status is: ', projectstatus);
 
-    var id = recCurrent.getValue({
-      fieldId: 'entityid'
-    });
-    log.debug('The entity id is: ', id);
+    // var id = recCurrent.getValue({
+    //   fieldId: 'entityid'
+    // });
+    // log.debug('The entity id is: ', id);
 
-    var tempid = parseFloat(id.substring(0, 1));
-    log.debug('The tempid is: ', tempid);
+    // var tempid = parseFloat(id.substring(0, 1));
+    // log.debug('The tempid is: ', tempid);
 
     var searchresultid = projectstatusmap[projectstatus];
     log.debug('The search result id is: ', searchresultid);

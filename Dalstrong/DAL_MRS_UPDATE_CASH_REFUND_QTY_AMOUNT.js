@@ -20,105 +20,72 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
   function getInputData() {
 
     var cashrefundSearchObj = search.create({
-      type: "cashrefund",
-      filters: [
-        ["type", "anyof", "CashRfnd"],
-        "AND",
-        ["mainline", "is", "F"],
-        "AND",
-        ["taxline", "is", "F"],
-        "AND",
-        ["shipping", "is", "F"],
-        "AND",
-        ["cogs", "is", "F"],
-        "AND",
-        ["item", "anyof", "636"],
-        "AND",
-        ["formulanumeric: CASE WHEN ({createdfrom.amount}*0.5) <= ({amount}*-1) THEN 1 ELSE 0 END", "equalto", "1"],
-        "AND",
-        ["numbertext", "contains", "CR901"]
-      ],
-      columns: [
-        search.createColumn({
-          name: "internalid",
-          label: "Internal ID"
-        }),
-        search.createColumn({
-          name: "line",
-          label: "Line ID"
-        }),
-        search.createColumn({
-          name: "saleseffectivedate",
-          sort: search.Sort.ASC,
-          label: "Sales Effective Date"
-        }),
-        search.createColumn({
-          name: "trandate",
-          label: "Date"
-        }),
-        search.createColumn({
-          name: "postingperiod",
-          label: "Period"
-        }),
-        search.createColumn({
-          name: "type",
-          label: "Type"
-        }),
-        search.createColumn({
-          name: "tranid",
-          label: "Document Number"
-        }),
-        search.createColumn({
-          name: "entity",
-          label: "Name"
-        }),
-        search.createColumn({
-          name: "accountmain",
-          label: "Account (Main)"
-        }),
-        search.createColumn({
-          name: "fxamount",
-          label: "Amount (Foreign Currency)"
-        }),
-        search.createColumn({
-          name: "amount",
-          label: "Refund Amount"
-        }),
-        search.createColumn({
-          name: "item",
-          label: "Item"
-        }),
-        search.createColumn({
-          name: "amount",
-          join: "createdFrom",
-          label: "Amount"
-        }),
-        search.createColumn({
-          name: "fxamount",
-          join: "createdFrom",
-          label: "Amount (Foreign Currency)"
-        }),
-        search.createColumn({
-          name: "internalid",
-          join: "createdFrom",
-          label: "Internal ID"
-        }),
-        search.createColumn({
-          name: "line",
-          join: "createdFrom",
-          label: "Line ID"
-        }),
-        search.createColumn({
-          name: "linesequencenumber",
-          join: "createdFrom",
-          label: "Line Sequence Number"
-        }),
-        search.createColumn({
-          name: "item",
-          join: "createdFrom",
-          label: "Item"
-        })
-      ]
+       type: "cashrefund",
+       filters:
+       [
+          ["type","anyof","CashRfnd"],
+          "AND",
+          ["mainline","is","F"],
+          "AND",
+          ["taxline","is","F"],
+          "AND",
+          ["shipping","is","F"],
+          "AND",
+          ["cogs","is","F"],
+          "AND",
+          ["item","anyof","636"],
+          "AND",
+          ["formulanumeric: CASE WHEN ({createdfrom.amount}*0.5) <= ({amount}*-1) THEN 1 ELSE 0 END","equalto","1"],
+       ],
+       columns:
+       [
+          search.createColumn({name: "internalid", label: "Internal ID"}),
+          search.createColumn({name: "line", label: "Line ID"}),
+          search.createColumn({
+             name: "saleseffectivedate",
+             sort: search.Sort.ASC,
+             label: "Sales Effective Date"
+          }),
+          search.createColumn({name: "trandate", label: "Date"}),
+          search.createColumn({name: "postingperiod", label: "Period"}),
+          search.createColumn({name: "type", label: "Type"}),
+          search.createColumn({name: "tranid", label: "Document Number"}),
+          search.createColumn({name: "entity", label: "Name"}),
+          search.createColumn({name: "accountmain", label: "Account (Main)"}),
+          search.createColumn({name: "fxamount", label: "Amount (Foreign Currency)"}),
+          search.createColumn({name: "amount", label: "Refund Amount"}),
+          search.createColumn({name: "item", label: "Item"}),
+          search.createColumn({
+             name: "amount",
+             join: "createdFrom",
+             label: "Amount"
+          }),
+          search.createColumn({
+             name: "fxamount",
+             join: "createdFrom",
+             label: "Amount (Foreign Currency)"
+          }),
+          search.createColumn({
+             name: "internalid",
+             join: "createdFrom",
+             label: "Internal ID"
+          }),
+          search.createColumn({
+             name: "line",
+             join: "createdFrom",
+             label: "Line ID"
+          }),
+          search.createColumn({
+             name: "linesequencenumber",
+             join: "createdFrom",
+             label: "Line Sequence Number"
+          }),
+          search.createColumn({
+             name: "item",
+             join: "createdFrom",
+             label: "Item"
+          })
+       ]
     });
     // var searchResultCount = cashrefundSearchObj.runPaged().count;
     // log.debug("cashrefundSearchObj result count",searchResultCount);
@@ -198,7 +165,6 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
             fieldId: 'taxrate1'
           }),
         };
-
         log.debug('The Cash Sale is: ', JSON.stringify(cashsaletran[i]));
         log.debug('The Cash Sale SKU is: ', JSON.stringify(cashsaletran[i].sku));
         log.debug('The Cash Sale Tax Code is: ', JSON.stringify(cashsaletran[i].taxcode));
