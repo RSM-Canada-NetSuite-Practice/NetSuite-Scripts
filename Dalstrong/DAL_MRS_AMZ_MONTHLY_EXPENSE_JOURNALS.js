@@ -1,226 +1,348 @@
-/*******************************************************************
- *
- *
- * Name: DAL_MRS_AMZ_CONSOLIDATION_JOURNALS.js
+/**
+ * @NApiVersion 2.1
  * @NScriptType MapReduceScript
- * @NApiVersion 2.x
- * Version: 0.0.1
- *
- *
- * Author: Nicolas Bean
- * Purpose: The purpose of this script is to move money from the consolidation account for each marketplace to the corresponding bank account
- * Script: DAL_MRS_AMZ_CONSOLIDATION_JOURNALS.js
- * Deploy:
- *
- *
- * ******************************************************************* */
+ * @NModuleScope SameAccount
+ */
+define(['N/format', 'N/record', 'N/search'],
+/**
+ * @param{format} FORMAT
+ * @param{record} RECORD
+ * @param{search} SEARCH
+ */
+function(FORMAT, RECORD, SEARCH) {
 
-define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, record, format) {
+    /**
+     * Marks the beginning of the Map/Reduce process and generates input data.
+     *
+     * @typedef {Object} ObjectRef
+     * @property {number} id - Internal ID of the record instance
+     * @property {string} type - Record type id
+     *
+     * @return {Array|Object|Search|RecordRef} inputSummary
+     * @since 2015.1
+     */
+    function getInputData() {
+        //Search to get unique Currency with date
+        let search_celigo_amzio_sett_fee = SEARCH.create({
+            type: "customrecord_celigo_amzio_sett_fee",
+            filters:
+                [
+                ],
+            columns:
+                [
+                    SEARCH.createColumn({
+                        name: "formuladate",
+                        summary: "GROUP",
+                        formula: "last_day(add_months({custrecordhb_amz_fee_posted_date}, 0))",
+                        sort: SEARCH.Sort.ASC,
+                        label: "Posted Day"
+                    }),
+                    SEARCH.createColumn({
+                        name: "custrecordhb_fee_currency",
+                        summary: "GROUP",
+                        label: "Currency"
+                    })
+                ]
+        });
 
-  function getInputData() {
-
-    var transactionObj = createTransactionObject();
-    return transactionObj;
-  }
-
-  function createTransactionObject() {
-    var transactionObject = {};
-
-    var transactionSearchObj = search.create({
-      type: "transaction",
-      filters: [
-        ["account", "anyof", "1199", "1200", "1201", "1208", "1209", "1210", "1211", "1205", "1203", "1204"], "AND", ["custbody_rsm_rec_proc_daily", "is", "F"], "AND", ["type", "noneof", "Journal"]
-      ],
-      columns: ["trandate", "account", "account.custrecord_rsm_destination_account", "currency", "cseg1", "debitfxamount", "debitamount", "creditfxamount", "creditamount"],
-    });
-
-    var res = transactionSearchObj.run().getRange(0, 999);
-    log.debug('getInputData', res.length + ' ' + JSON.stringify(res));
-
-    if (res != null && res != '') {
-      transactionObject = populateTransactionObject(transactionObject, res);
+        return search_celigo_amzio_sett_fee;
     }
-    return transactionObject;
-  }
 
-  function populateTransactionObject(tranObj, res) {
+    /**
+     * Executes when the map entry point is triggered and applies to each key/value pair.
+     *
+     * @param {MapSummary} context - Data collection containing the key/value pairs to process through the map stage
+     * @since 2015.1
+     */
+    function map(context) {
+        let object_current = JSON.parse(context.value),
+            str_trandate = object_current["values"]["GROUP(formuladate)"],
+            int_currency_id = object_current["values"]["GROUP(custrecordhb_fee_currency)"]["value"],
+            temp_date = FORMAT.parse({
+                value: str_trandate,
+                type: FORMAT.Type.DATE,
+                timezone: FORMAT.Timezone.AMERICA_NEW_YORK
+            }),
+            date_reversal = new Date(temp_date.setDate(temp_date.getDate() + 1)),
+            columns = [];
 
-    for (var i = 0; i < res.length; i++) {
+        log.debug({title: 'Current Object', details: `${str_trandate}  ${int_currency_id} ${new Date(str_trandate)}`});
 
-      var consolidationAccount = res[i].getValue('account');
-      var tranDate = res[i].getValue('trandate');
-      var tranDebitAmount = res[i].getValue('debitfxamount');
-      var tranCreditAmount = res[i].getValue('creditfxamount');
-      var destAccount = res[i].getValue({
-        name: 'custrecord_rsm_destination_account',
-        join: 'account'
-      });
+        //search to get all the Fee Types for the current Posted day and currency
 
-      if (tranObj[consolidationAccount] == null || tranObj[consolidationAccount] == '' || tranObj[consolidationAccount] == undefined) {
-        tranObj[consolidationAccount] = {};
-      }
+        let search_celigo_amzio_sett_fee = SEARCH.create({
+            type: "customrecord_celigo_amzio_sett_fee",
+            filters:
+                [
+                    ["formuladate: last_day(add_months({custrecordhb_amz_fee_posted_date}, 0))","on", str_trandate],
+                    "AND",
+                    ["custrecordhb_fee_currency","anyof",int_currency_id]
+                ],
+            columns:
+                [
+                    columns[0] = SEARCH.createColumn({
+                        name: "formulatext",
+                        summary: "GROUP",
+                        formula: "{custrecord_celigo_amzio_set_f_par_trans.custrecord_celigo_amzio_set_amz_account}",
+                        label: "Amazon account"
+                    }),
+                    columns[1] = SEARCH.createColumn({
+                        name: "custrecord_celigo_amzio_set_f_fee_type",
+                        summary: "GROUP",
+                        label: "Fee Type"
+                    }),
+                    columns[2] = SEARCH.createColumn({
+                        name: "formulacurrency",
+                        summary: "GROUP",
+                        formula: "{custrecordhb_fee_currency.exchangerate}",
+                        label: "Exchange Rate"
+                    }),
+                    columns[3] = SEARCH.createColumn({
+                        name: "custrecord_celigo_amzio_set_f_amount",
+                        summary: "SUM",
+                        label: "Amount (FX)"
+                    }),
+                    columns[4] = SEARCH.createColumn({
+                        name: "formulacurrency",
+                        summary: "SUM",
+                        formula: "{custrecord_celigo_amzio_set_f_amount}*{custrecordhb_fee_currency.exchangerate}",
+                        label: "Amount (CAD)"
+                    })
+                ]
+        });
 
-      if (tranObj[consolidationAccount][tranDate] == null || tranObj[consolidationAccount][tranDate] == '' || tranObj[consolidationAccount][tranDate] == undefined) {
-        tranObj[consolidationAccount][tranDate] = {
-          'paymentids': [res[i].id],
-          'destacct': destAccount,
-          'currency': (res[i].getValue('currency')),
-          'marketplace': (res[i].getValue('cseg1')),
-          'debitamount': tranDebitAmount,
-          'creditamount': tranCreditAmount
-        };
-      } else {
-        var debitAmount = parseFloat(tranObj[consolidationAccount][tranDate].debitamount) + parseFloat(tranDebitAmount);
-        tranObj[consolidationAccount][tranDate].debitamount = debitAmount;
+        search_celigo_amzio_sett_fee.run().each(function (result){
+            log.debug('exch rate', result.getValue(columns[2]));
+        });
 
-        var creditAmount = parseFloat(tranObj[consolidationAccount][tranDate].creditamount) + parseFloat(tranCreditAmount);
-        tranObj[consolidationAccount][tranDate].creditamount = creditAmount;
 
-        var paymentIdArr = tranObj[consolidationAccount][tranDate].paymentids;
-        paymentIdArr.push(res[i].id);
-        tranObj[consolidationAccount][tranDate].paymentids = paymentIdArr;
-      }
-      log.debug('object', JSON.stringify(tranObj));
-    }
-    log.debug('Final object', JSON.stringify(tranObj));
-    return tranObj;
-  }
 
-  function map(context) {
-    var consolidationAccount = context.key;
-    var journalInfo = JSON.parse(context.value);
-    log.debug('result', journalInfo);
+        if(search_celigo_amzio_sett_fee.runPaged().count > 0){
+            //create Journal
 
-    for (var date in journalInfo) {
-      if (journalInfo.hasOwnProperty(date)) {
-        try {
+            try{
+                let record_journal = RECORD.create({
+                    type: RECORD.Type.JOURNAL_ENTRY,
+                    isDynamic: true
+                });
 
-          var journalId = createJournal(consolidationAccount, journalInfo[date], date);
-          context.write(journalId, journalInfo[date].paymentids);
-        } catch (e) {
-          log.debug('Error', e.name + ' ' + e.message);
+                record_journal.setValue({
+                    fieldId: 'trandate',
+                    value: FORMAT.parse({
+                        value: str_trandate,
+                        type: FORMAT.Type.DATE
+                    })
+                }).setValue({
+                    fieldId: 'currency',
+                    value: int_currency_id
+                }).setValue({
+                    fieldId: 'reversaldate',
+                    value: date_reversal
+                });
+
+                let num_exchangeRate = '',
+                    amazon_account = '',
+                    ns_account_for_fee_type = '',
+                    total_amount = 0,
+                    fee_type_account_error = false,
+                    amazon_account_error = false;
+
+
+                log.debug('REversal date', `${record_journal.getValue('reversaldate')}`);
+
+
+                //Add Fee Type to lines
+                let search_PagedData = search_celigo_amzio_sett_fee.runPaged({pageSize: 1000});
+
+                search_PagedData.pageRanges.forEach(function(pageRange){
+                    let currPage = search_PagedData.fetch({index: pageRange.index});
+                    currPage.data.forEach(function(result){
+                        !amazon_account ? amazon_account = result.getValue(columns[0]) : '';
+                        !num_exchangeRate ? num_exchangeRate = result.getValue(columns[2]) : '';
+                        total_amount += parseFloat(result.getValue(columns[3]));
+
+                        ns_account_for_fee_type = getFeeTypeAccount(result.getValue(columns[1]));
+
+                        if(!ns_account_for_fee_type){
+                            fee_type_account_error = true;
+                            log.error({
+                                title: 'Invalid Fee Type',
+                                details: `No account found for ${result.getValue(columns[1])}`
+                            });
+                        }
+
+
+                        record_journal.selectNewLine({
+                            sublistId: 'line'
+                        }).setCurrentSublistValue({
+                            sublistId: 'line',
+                            fieldId: 'account',
+                            value: ns_account_for_fee_type  //account as per fee type
+                        }).setCurrentSublistValue({
+                            sublistId: 'line',
+                            fieldId: 'memo',
+                            value: result.getValue(columns[1])         //fee type as memo
+                        }).setCurrentSublistValue({
+                            sublistId: 'line',
+                            fieldId: 'debit',
+                            value: result.getValue(columns[3])      //FX Amount (can be +ve or negative)
+                        }).commitLine({
+                            sublistId: 'line'
+                        });
+                    });
+                });
+
+                let ns_account_for_amazon_account = getAmazonAccount(amazon_account);
+
+                log.debug('Total', `${total_amount.toFixed(2)} `);
+                log.debug('Amazon Account', `${amazon_account}  ${ns_account_for_amazon_account}`);
+
+                if(!ns_account_for_amazon_account){
+                    log.error({
+                        title: 'Invalid Amazon Account',
+                        details: `No account found for ${amazon_account}`
+                    });
+
+                    amazon_account_error = true;
+                }
+
+                //Add Credit Line
+                record_journal.selectNewLine({
+                    sublistId: 'line'
+                }).setCurrentSublistValue({
+                    sublistId: 'line',
+                    fieldId: 'account',
+                    value: ns_account_for_amazon_account   //account as per amazon account
+                }).setCurrentSublistValue({
+                    sublistId: 'line',
+                    fieldId: 'memo',
+                    value: ''
+                }).setCurrentSublistValue({
+                    sublistId: 'line',
+                    fieldId: 'credit',
+                    value: total_amount.toFixed(2)      //total debit amount
+                }).commitLine({
+                    sublistId: 'line'
+                });
+
+                log.debug('exch rate', num_exchangeRate);
+
+                //Exchange Rate
+                record_journal.setValue({
+                    fieldId: 'exchangerate',
+                    value:  num_exchangeRate
+                });
+
+                //Save the Journal
+                if(!fee_type_account_error && !amazon_account_error){
+                    /*record_journal.save({
+                        enableSourcing: true,
+                        ignoreMandatoryFields: false
+                    });*/
+                }
+
+            }catch (e){
+                log.error({
+                    title: `Posting Date: ${str_trandate} Currency ID: ${int_currency_id}`,
+                    details: e
+                });
+            }
+
         }
-      }
+
     }
 
-
-  }
-
-  function createJournal(consolidationAccount, journalInfo, journalDate) {
-
-    var journalRec = record.create({
-      type: 'journalentry',
-      isDynamic: true
-    });
-    var date = format.parse({
-      value: journalDate,
-      type: format.Type.DATE
-    });
-    //set header data
-    journalRec.setValue('currency', journalInfo.currency);
-    journalRec.setValue('trandate', date);
-    journalRec.setValue('cseg1', journalInfo.marketplace);
-    journalRec.setValue('department', 4);
-    journalRec.setValue('custbodyrsm_journal_type', 1);
-
-    var consolidationAccountName = search.lookupFields({
-      type: 'account',
-      id: consolidationAccount,
-      columns: ['name']
-    }).name;
-    var destinationaccttName = search.lookupFields({
-      type: 'account',
-      id: journalInfo.destacct,
-      columns: ['name']
-    }).name;
-    var marketplaceName = search.lookupFields({
-      type: 'customrecord_cseg1',
-      id: journalInfo.marketplace,
-      columns: ['name']
-    }).name;
-    journalRec.setValue('memo', ('Transfer from : ' + consolidationAccountName + ' to ' + destinationaccttName + ' for ' + marketplaceName));
-
-    //set line data
-    journalRec.selectNewLine('line');
-    journalRec.setCurrentSublistValue('line', 'account', consolidationAccount);
-
-    if ((journalInfo.debitamount) != null && (journalInfo.debitamount) != '') {
-      journalRec.setCurrentSublistValue('line', 'debit', (journalInfo.debitamount).toFixed(2));
-    } else {
-      journalRec.setCurrentSublistValue('line', 'credit', (journalInfo.creditamount).toFixed(2));
-    }
-    journalRec.commitLine('line');
-
-    journalRec.selectNewLine('line');
-    journalRec.setCurrentSublistValue('line', 'account', journalInfo.destacct);
-
-    if ((journalInfo.debitamount) != null && (journalInfo.debitamount) != '') {
-      journalRec.setCurrentSublistValue('line', 'credit', (journalInfo.debitamount).toFixed(2));
-    } else {
-      journalRec.setCurrentSublistValue('line', 'debit', (journalInfo.creditamount).toFixed(2));
-    }
-    journalRec.commitLine('line');
-
-    journalId = journalRec.save();
-    return journalId;
-  }
-
-  function reduce(context) {
-    var journalID = context.key;
-    var results = JSON.stringify(context.values);
-    var paymentIds = (results.replace(/[^0-9\,]/g, "")).split(",");
-
-    for (var i = 0; i < paymentIds.length; i++) {
-      var recordType = search.lookupFields({
-        type: search.Type.TRANSACTION,
-        id: paymentIds[i],
-        columns: 'type'
-      }).type[0].text;
-
-      if (recordType == 'Payment') {
-        record.submitFields({
-          type: 'customerpayment',
-          id: paymentIds[i],
-          values: {
-            custbody_rsm_rec_proc_daily: true,
-            custbodyrsm_cus_pay_jour_entry: journalID
-          }
+    function getAmazonAccount(amazonAccount){
+        let account = '';
+        let customrecord_dal_amzn_ns_acct_mappingSearchObj = SEARCH.create({
+            type: "customrecord_dal_amzn_ns_acct_mapping",
+            filters:
+                [
+                    ["name","is", amazonAccount],
+                    "AND",
+                    ["isinactive","is","F"]
+                ],
+            columns:
+                [
+                    SEARCH.createColumn({
+                        name: "name",
+                        sort: SEARCH.Sort.ASC,
+                        label: "Amazon Account"
+                    }),
+                    SEARCH.createColumn({name: "custrecord_dal_ns_account", label: "Account"})
+                ]
         });
-      } else {
-        record.submitFields({
-          type: 'customerrefund',
-          id: paymentIds[i],
-          values: {
-            custbody_rsm_rec_proc_daily: true,
-            custbodyrsm_cus_pay_jour_entry: journalID
-          }
+
+        //var searchResultCount = customrecord_dal_amzn_ns_acct_mappingSearchObj.runPaged().count;
+        //log.debug("customrecord_dal_amzn_ns_acct_mappingSearchObj result count",searchResultCount);
+
+        customrecord_dal_amzn_ns_acct_mappingSearchObj.run().each(function(result){
+            account = result.getValue({name: 'custrecord_dal_ns_account'});
+            return false;
         });
-      }
+
+        return account;
     }
-  }
 
-  function summarize(context) {
+    function getFeeTypeAccount(feeType){
+        let account = '';
 
-    // Log details about the script's execution.
-    log.audit({
-      title: 'Usage units consumed',
-      details: context.usage
-    });
-    log.audit({
-      title: 'Concurrency',
-      details: context.concurrency
-    });
-    log.audit({
-      title: 'Number of yields',
-      details: context.yields
-    });
-  }
+        let customrecord_dal_feetype_account_mappingSearchObj = SEARCH.create({
+            type: "customrecord_dal_feetype_account_mapping",
+            filters:
+                [
+                    ["name","is", feeType],
+                    "AND",
+                    ["isinactive","is","F"]
+                ],
+            columns:
+                [
+                    SEARCH.createColumn({
+                        name: "name",
+                        sort: SEARCH.Sort.ASC,
+                        label: "Name"
+                    }),
+                    SEARCH.createColumn({name: "custrecord_dal_fee_type_account", label: "Account"})
+                ]
+        });
 
-  // Link each entry point to the appropriate function.
-  return {
-    getInputData: getInputData,
-    map: map,
-    reduce: reduce,
-    summarize: summarize
-  };
+        //let searchResultCount = customrecord_dal_feetype_account_mappingSearchObj.runPaged().count;
+        //log.debug("customrecord_dal_feetype_account_mappingSearchObj result count",searchResultCount);
+
+        customrecord_dal_feetype_account_mappingSearchObj.run().each(function(result){
+            account = result.getValue({name: 'custrecord_dal_fee_type_account'});
+            return false;
+        });
+
+        return account;
+    }
+
+    /**
+     * Executes when the reduce entry point is triggered and applies to each group.
+     *
+     * @param {ReduceSummary} context - Data collection containing the groups to process through the reduce stage
+     * @since 2015.1
+     */
+    function reduce(context) {
+
+    }
+
+
+    /**
+     * Executes when the summarize entry point is triggered and applies to the result set.
+     *
+     * @param {Summary} summary - Holds statistics regarding the execution of a map/reduce script
+     * @since 2015.1
+     */
+    function summarize(summary) {
+
+    }
+
+    return {
+        getInputData: getInputData,
+        map: map,
+       //reduce: reduce,
+       //summarize: summarize
+    };
+
 });
