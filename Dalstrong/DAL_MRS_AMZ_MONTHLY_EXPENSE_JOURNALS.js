@@ -4,12 +4,12 @@
  * @NModuleScope SameAccount
  */
 define(['N/format', 'N/record', 'N/search'],
-/**
- * @param{format} FORMAT
- * @param{record} RECORD
- * @param{search} SEARCH
- */
-function(FORMAT, RECORD, SEARCH) {
+  /**
+   * @param{format} FORMAT
+   * @param{record} RECORD
+   * @param{search} SEARCH
+   */
+  function(FORMAT, RECORD, SEARCH) {
 
     /**
      * Marks the beginning of the Map/Reduce process and generates input data.
@@ -22,30 +22,29 @@ function(FORMAT, RECORD, SEARCH) {
      * @since 2015.1
      */
     function getInputData() {
-        //Search to get unique Currency with date
-        let search_celigo_amzio_sett_fee = SEARCH.create({
-            type: "customrecord_celigo_amzio_sett_fee",
-            filters:
-                [
-                ],
-            columns:
-                [
-                    SEARCH.createColumn({
-                        name: "formuladate",
-                        summary: "GROUP",
-                        formula: "last_day(add_months({custrecordhb_amz_fee_posted_date}, 0))",
-                        sort: SEARCH.Sort.ASC,
-                        label: "Posted Day"
-                    }),
-                    SEARCH.createColumn({
-                        name: "custrecordhb_fee_currency",
-                        summary: "GROUP",
-                        label: "Currency"
-                    })
-                ]
-        });
+      //Search to get unique Currency with date
+      let search_celigo_amzio_sett_fee = SEARCH.create({
+        type: "customrecord_celigo_amzio_sett_fee",
+        filters: [
+          ["formuladate: last_day(add_months({custrecordhb_amz_fee_posted_date}, 0))", "onorafter", "2020-02-01"]
+        ],
+        columns: [
+          SEARCH.createColumn({
+            name: "formuladate",
+            summary: "GROUP",
+            formula: "last_day(add_months({custrecordhb_amz_fee_posted_date}, 0))",
+            sort: SEARCH.Sort.ASC,
+            label: "Posted Day"
+          }),
+          SEARCH.createColumn({
+            name: "custrecordhb_fee_currency",
+            summary: "GROUP",
+            label: "Currency"
+          })
+        ]
+      });
 
-        return search_celigo_amzio_sett_fee;
+      return search_celigo_amzio_sett_fee;
     }
 
     /**
@@ -55,266 +54,280 @@ function(FORMAT, RECORD, SEARCH) {
      * @since 2015.1
      */
     function map(context) {
-        let object_current = JSON.parse(context.value),
-            str_trandate = object_current["values"]["GROUP(formuladate)"],
-            int_currency_id = object_current["values"]["GROUP(custrecordhb_fee_currency)"]["value"],
-            temp_date = FORMAT.parse({
-                value: str_trandate,
-                type: FORMAT.Type.DATE,
-                timezone: FORMAT.Timezone.AMERICA_NEW_YORK
-            }),
-            date_reversal = new Date(temp_date.setDate(temp_date.getDate() + 1)),
-            columns = [];
+      let object_current = JSON.parse(context.value),
+        str_trandate = object_current["values"]["GROUP(formuladate)"],
+        int_currency_id = object_current["values"]["GROUP(custrecordhb_fee_currency)"]["value"],
+        temp_date = FORMAT.parse({
+          value: str_trandate,
+          type: FORMAT.Type.DATE,
+          timezone: FORMAT.Timezone.AMERICA_NEW_YORK
+        }),
+        date_reversal = new Date(temp_date.setDate(temp_date.getDate() + 1)),
+        columns = [];
 
-        log.debug({title: 'Current Object', details: `${str_trandate}  ${int_currency_id} ${new Date(str_trandate)}`});
+      log.debug({
+        title: 'Current Object',
+        details: `${str_trandate}  ${int_currency_id} ${new Date(str_trandate)}`
+      });
 
-        //search to get all the Fee Types for the current Posted day and currency
+      //search to get all the Fee Types for the current Posted day and currency
 
-        let search_celigo_amzio_sett_fee = SEARCH.create({
-            type: "customrecord_celigo_amzio_sett_fee",
-            filters:
-                [
-                    ["formuladate: last_day(add_months({custrecordhb_amz_fee_posted_date}, 0))","on", str_trandate],
-                    "AND",
-                    ["custrecordhb_fee_currency","anyof",int_currency_id]
-                ],
-            columns:
-                [
-                    columns[0] = SEARCH.createColumn({
-                        name: "formulatext",
-                        summary: "GROUP",
-                        formula: "{custrecord_celigo_amzio_set_f_par_trans.custrecord_celigo_amzio_set_amz_account}",
-                        label: "Amazon account"
-                    }),
-                    columns[1] = SEARCH.createColumn({
-                        name: "custrecord_celigo_amzio_set_f_fee_type",
-                        summary: "GROUP",
-                        label: "Fee Type"
-                    }),
-                    columns[2] = SEARCH.createColumn({
-                        name: "formulacurrency",
-                        summary: "GROUP",
-                        formula: "{custrecordhb_fee_currency.exchangerate}",
-                        label: "Exchange Rate"
-                    }),
-                    columns[3] = SEARCH.createColumn({
-                        name: "custrecord_celigo_amzio_set_f_amount",
-                        summary: "SUM",
-                        label: "Amount (FX)"
-                    }),
-                    columns[4] = SEARCH.createColumn({
-                        name: "formulacurrency",
-                        summary: "SUM",
-                        formula: "{custrecord_celigo_amzio_set_f_amount}*{custrecordhb_fee_currency.exchangerate}",
-                        label: "Amount (CAD)"
-                    })
-                ]
-        });
+      let search_celigo_amzio_sett_fee = SEARCH.create({
+        type: "customrecord_celigo_amzio_sett_fee",
+        filters: [
+          ["formuladate: last_day(add_months({custrecordhb_amz_fee_posted_date}, 0))", "on", str_trandate],
+          "AND",
+          ["custrecordhb_fee_currency", "anyof", int_currency_id]
+        ],
+        columns: [
+          columns[0] = SEARCH.createColumn({
+            name: "formulatext",
+            summary: "GROUP",
+            formula: "{custrecord_celigo_amzio_set_f_par_trans.custrecord_celigo_amzio_set_amz_account}",
+            label: "Amazon account"
+          }),
+          columns[1] = SEARCH.createColumn({
+            name: "custrecord_celigo_amzio_set_f_fee_type",
+            summary: "GROUP",
+            label: "Fee Type"
+          }),
+          columns[2] = SEARCH.createColumn({
+            name: "formulacurrency",
+            summary: "GROUP",
+            formula: "{custrecordhb_fee_currency.exchangerate}",
+            label: "Exchange Rate"
+          }),
+          columns[3] = SEARCH.createColumn({
+            name: "custrecord_celigo_amzio_set_f_amount",
+            summary: "SUM",
+            label: "Amount (FX)"
+          }),
+          columns[4] = SEARCH.createColumn({
+            name: "formulacurrency",
+            summary: "SUM",
+            formula: "{custrecord_celigo_amzio_set_f_amount}*{custrecordhb_fee_currency.exchangerate}",
+            label: "Amount (CAD)"
+          })
+        ]
+      });
 
-        search_celigo_amzio_sett_fee.run().each(function (result){
-            log.debug('exch rate', result.getValue(columns[2]));
-        });
-
-
-
-        if(search_celigo_amzio_sett_fee.runPaged().count > 0){
-            //create Journal
-
-            try{
-                let record_journal = RECORD.create({
-                    type: RECORD.Type.JOURNAL_ENTRY,
-                    isDynamic: true
-                });
-
-                record_journal.setValue({
-                    fieldId: 'trandate',
-                    value: FORMAT.parse({
-                        value: str_trandate,
-                        type: FORMAT.Type.DATE
-                    })
-                }).setValue({
-                    fieldId: 'currency',
-                    value: int_currency_id
-                }).setValue({
-                    fieldId: 'reversaldate',
-                    value: date_reversal
-                });
-
-                let num_exchangeRate = '',
-                    amazon_account = '',
-                    ns_account_for_fee_type = '',
-                    total_amount = 0,
-                    fee_type_account_error = false,
-                    amazon_account_error = false;
+      search_celigo_amzio_sett_fee.run().each(function(result) {
+        log.debug('exch rate', result.getValue(columns[2]));
+      });
 
 
-                log.debug('REversal date', `${record_journal.getValue('reversaldate')}`);
+
+      if (search_celigo_amzio_sett_fee.runPaged().count > 0) {
+        //create Journal
+
+        try {
+          let record_journal = RECORD.create({
+            type: RECORD.Type.JOURNAL_ENTRY,
+            isDynamic: true
+          });
+
+          record_journal.setValue({
+            fieldId: 'trandate',
+            value: FORMAT.parse({
+              value: str_trandate,
+              type: FORMAT.Type.DATE
+            })
+          }).setValue({
+            fieldId: 'currency',
+            value: int_currency_id
+          }).setValue({
+            fieldId: 'reversaldate',
+            value: date_reversal
+          }).setValue({
+            fieldId: 'custbodyrsm_journal_type',
+            value: 5
+          });
+
+          let num_exchangeRate = '',
+            amazon_account = '',
+            ns_account_for_fee_type = '',
+            total_amount = 0,
+            fee_type_account_error = false,
+            amazon_account_error = false;
 
 
-                //Add Fee Type to lines
-                let search_PagedData = search_celigo_amzio_sett_fee.runPaged({pageSize: 1000});
-
-                search_PagedData.pageRanges.forEach(function(pageRange){
-                    let currPage = search_PagedData.fetch({index: pageRange.index});
-                    currPage.data.forEach(function(result){
-                        !amazon_account ? amazon_account = result.getValue(columns[0]) : '';
-                        !num_exchangeRate ? num_exchangeRate = result.getValue(columns[2]) : '';
-                        total_amount += parseFloat(result.getValue(columns[3]));
-
-                        ns_account_for_fee_type = getFeeTypeAccount(result.getValue(columns[1]));
-
-                        if(!ns_account_for_fee_type){
-                            fee_type_account_error = true;
-                            log.error({
-                                title: 'Invalid Fee Type',
-                                details: `No account found for ${result.getValue(columns[1])}`
-                            });
-                        }
+          log.debug('Reversal date', `${record_journal.getValue('reversaldate')}`);
 
 
-                        record_journal.selectNewLine({
-                            sublistId: 'line'
-                        }).setCurrentSublistValue({
-                            sublistId: 'line',
-                            fieldId: 'account',
-                            value: ns_account_for_fee_type  //account as per fee type
-                        }).setCurrentSublistValue({
-                            sublistId: 'line',
-                            fieldId: 'memo',
-                            value: result.getValue(columns[1])         //fee type as memo
-                        }).setCurrentSublistValue({
-                            sublistId: 'line',
-                            fieldId: 'debit',
-                            value: result.getValue(columns[3])      //FX Amount (can be +ve or negative)
-                        }).commitLine({
-                            sublistId: 'line'
-                        });
-                    });
-                });
+          //Add Fee Type to lines
+          let search_PagedData = search_celigo_amzio_sett_fee.runPaged({
+            pageSize: 1000
+          });
 
-                let ns_account_for_amazon_account = getAmazonAccount(amazon_account);
+          search_PagedData.pageRanges.forEach(function(pageRange) {
+            let currPage = search_PagedData.fetch({
+              index: pageRange.index
+            });
+            currPage.data.forEach(function(result) {
+              !amazon_account ? amazon_account = result.getValue(columns[0]) : '';
+              !num_exchangeRate ? num_exchangeRate = result.getValue(columns[2]) : '';
+              total_amount += parseFloat(result.getValue(columns[3]));
 
-                log.debug('Total', `${total_amount.toFixed(2)} `);
-                log.debug('Amazon Account', `${amazon_account}  ${ns_account_for_amazon_account}`);
+              ns_account_for_fee_type = getFeeTypeAccount(result.getValue(columns[1]));
 
-                if(!ns_account_for_amazon_account){
-                    log.error({
-                        title: 'Invalid Amazon Account',
-                        details: `No account found for ${amazon_account}`
-                    });
-
-                    amazon_account_error = true;
-                }
-
-                //Add Credit Line
-                record_journal.selectNewLine({
-                    sublistId: 'line'
-                }).setCurrentSublistValue({
-                    sublistId: 'line',
-                    fieldId: 'account',
-                    value: ns_account_for_amazon_account   //account as per amazon account
-                }).setCurrentSublistValue({
-                    sublistId: 'line',
-                    fieldId: 'memo',
-                    value: ''
-                }).setCurrentSublistValue({
-                    sublistId: 'line',
-                    fieldId: 'credit',
-                    value: total_amount.toFixed(2)      //total debit amount
-                }).commitLine({
-                    sublistId: 'line'
-                });
-
-                log.debug('exch rate', num_exchangeRate);
-
-                //Exchange Rate
-                record_journal.setValue({
-                    fieldId: 'exchangerate',
-                    value:  num_exchangeRate
-                });
-
-                //Save the Journal
-                if(!fee_type_account_error && !amazon_account_error){
-                    /*record_journal.save({
-                        enableSourcing: true,
-                        ignoreMandatoryFields: false
-                    });*/
-                }
-
-            }catch (e){
+              if (!ns_account_for_fee_type) {
+                fee_type_account_error = true;
                 log.error({
-                    title: `Posting Date: ${str_trandate} Currency ID: ${int_currency_id}`,
-                    details: e
+                  title: 'Invalid Fee Type',
+                  details: `No account found for ${result.getValue(columns[1])}`
                 });
-            }
+              }
 
+
+              record_journal.selectNewLine({
+                sublistId: 'line'
+              }).setCurrentSublistValue({
+                sublistId: 'line',
+                fieldId: 'account',
+                value: ns_account_for_fee_type //account as per fee type
+              }).setCurrentSublistValue({
+                sublistId: 'line',
+                fieldId: 'memo',
+                value: result.getValue(columns[1]) //fee type as memo
+              }).setCurrentSublistValue({
+                sublistId: 'line',
+                fieldId: 'debit',
+                value: result.getValue(columns[3]) //FX Amount (can be +ve or negative)
+              }).commitLine({
+                sublistId: 'line'
+              });
+            });
+          });
+
+          let ns_account_for_amazon_account = getAmazonAccount(amazon_account);
+
+          log.debug('Total', `${total_amount.toFixed(2)} `);
+          log.debug('Amazon Account', `${amazon_account}  ${ns_account_for_amazon_account}`);
+
+          if (!ns_account_for_amazon_account) {
+            log.error({
+              title: 'Invalid Amazon Account',
+              details: `No account found for ${amazon_account}`
+            });
+
+            amazon_account_error = true;
+          }
+
+          //Add Credit Line
+          record_journal.selectNewLine({
+            sublistId: 'line'
+          }).setCurrentSublistValue({
+            sublistId: 'line',
+            fieldId: 'account',
+            value: ns_account_for_amazon_account //account as per amazon account
+          }).setCurrentSublistValue({
+            sublistId: 'line',
+            fieldId: 'memo',
+            value: ''
+          }).setCurrentSublistValue({
+            sublistId: 'line',
+            fieldId: 'credit',
+            value: total_amount.toFixed(2) //total debit amount
+          }).commitLine({
+            sublistId: 'line'
+          });
+
+          log.debug('exch rate', num_exchangeRate);
+
+          //Exchange Rate
+          record_journal.setValue({
+            fieldId: 'exchangerate',
+            value: num_exchangeRate
+          });
+
+          //Save the Journal
+          if (!fee_type_account_error && !amazon_account_error) {
+            record_journal.save({
+                enableSourcing: true,
+                ignoreMandatoryFields: false
+            });
+          }
+
+        } catch (e) {
+          log.error({
+            title: `Posting Date: ${str_trandate} Currency ID: ${int_currency_id}`,
+            details: e
+          });
         }
 
+      }
+
     }
 
-    function getAmazonAccount(amazonAccount){
-        let account = '';
-        let customrecord_dal_amzn_ns_acct_mappingSearchObj = SEARCH.create({
-            type: "customrecord_dal_amzn_ns_acct_mapping",
-            filters:
-                [
-                    ["name","is", amazonAccount],
-                    "AND",
-                    ["isinactive","is","F"]
-                ],
-            columns:
-                [
-                    SEARCH.createColumn({
-                        name: "name",
-                        sort: SEARCH.Sort.ASC,
-                        label: "Amazon Account"
-                    }),
-                    SEARCH.createColumn({name: "custrecord_dal_ns_account", label: "Account"})
-                ]
+    function getAmazonAccount(amazonAccount) {
+      let account = '';
+      let customrecord_dal_amzn_ns_acct_mappingSearchObj = SEARCH.create({
+        type: "customrecord_dal_amzn_ns_acct_mapping",
+        filters: [
+          ["name", "is", amazonAccount],
+          "AND",
+          ["isinactive", "is", "F"]
+        ],
+        columns: [
+          SEARCH.createColumn({
+            name: "name",
+            sort: SEARCH.Sort.ASC,
+            label: "Amazon Account"
+          }),
+          SEARCH.createColumn({
+            name: "custrecord_dal_ns_account",
+            label: "Account"
+          })
+        ]
+      });
+
+      //var searchResultCount = customrecord_dal_amzn_ns_acct_mappingSearchObj.runPaged().count;
+      //log.debug("customrecord_dal_amzn_ns_acct_mappingSearchObj result count",searchResultCount);
+
+      customrecord_dal_amzn_ns_acct_mappingSearchObj.run().each(function(result) {
+        account = result.getValue({
+          name: 'custrecord_dal_ns_account'
         });
+        return false;
+      });
 
-        //var searchResultCount = customrecord_dal_amzn_ns_acct_mappingSearchObj.runPaged().count;
-        //log.debug("customrecord_dal_amzn_ns_acct_mappingSearchObj result count",searchResultCount);
-
-        customrecord_dal_amzn_ns_acct_mappingSearchObj.run().each(function(result){
-            account = result.getValue({name: 'custrecord_dal_ns_account'});
-            return false;
-        });
-
-        return account;
+      return account;
     }
 
-    function getFeeTypeAccount(feeType){
-        let account = '';
+    function getFeeTypeAccount(feeType) {
+      let account = '';
 
-        let customrecord_dal_feetype_account_mappingSearchObj = SEARCH.create({
-            type: "customrecord_dal_feetype_account_mapping",
-            filters:
-                [
-                    ["name","is", feeType],
-                    "AND",
-                    ["isinactive","is","F"]
-                ],
-            columns:
-                [
-                    SEARCH.createColumn({
-                        name: "name",
-                        sort: SEARCH.Sort.ASC,
-                        label: "Name"
-                    }),
-                    SEARCH.createColumn({name: "custrecord_dal_fee_type_account", label: "Account"})
-                ]
+      let customrecord_dal_feetype_account_mappingSearchObj = SEARCH.create({
+        type: "customrecord_dal_feetype_account_mapping",
+        filters: [
+          ["name", "is", feeType],
+          "AND",
+          ["isinactive", "is", "F"]
+        ],
+        columns: [
+          SEARCH.createColumn({
+            name: "name",
+            sort: SEARCH.Sort.ASC,
+            label: "Name"
+          }),
+          SEARCH.createColumn({
+            name: "custrecord_dal_fee_type_account",
+            label: "Account"
+          })
+        ]
+      });
+
+      //let searchResultCount = customrecord_dal_feetype_account_mappingSearchObj.runPaged().count;
+      //log.debug("customrecord_dal_feetype_account_mappingSearchObj result count",searchResultCount);
+
+      customrecord_dal_feetype_account_mappingSearchObj.run().each(function(result) {
+        account = result.getValue({
+          name: 'custrecord_dal_fee_type_account'
         });
+        return false;
+      });
 
-        //let searchResultCount = customrecord_dal_feetype_account_mappingSearchObj.runPaged().count;
-        //log.debug("customrecord_dal_feetype_account_mappingSearchObj result count",searchResultCount);
-
-        customrecord_dal_feetype_account_mappingSearchObj.run().each(function(result){
-            account = result.getValue({name: 'custrecord_dal_fee_type_account'});
-            return false;
-        });
-
-        return account;
+      return account;
     }
 
     /**
@@ -339,10 +352,10 @@ function(FORMAT, RECORD, SEARCH) {
     }
 
     return {
-        getInputData: getInputData,
-        map: map,
-       //reduce: reduce,
-       //summarize: summarize
+      getInputData: getInputData,
+      map: map,
+      reduce: reduce,
+      summarize: summarize
     };
 
-});
+  });
