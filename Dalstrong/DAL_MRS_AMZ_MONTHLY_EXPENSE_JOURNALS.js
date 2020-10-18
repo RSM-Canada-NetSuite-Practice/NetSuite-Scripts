@@ -178,7 +178,7 @@ define(['N/format', 'N/record', 'N/search'],
                 });
               }
 
-
+              // Add Credit line
               record_journal.selectNewLine({
                 sublistId: 'line'
               }).setCurrentSublistValue({
@@ -191,7 +191,7 @@ define(['N/format', 'N/record', 'N/search'],
                 value: result.getValue(columns[1]) //fee type as memo
               }).setCurrentSublistValue({
                 sublistId: 'line',
-                fieldId: 'debit',
+                fieldId: 'credit',
                 value: result.getValue(columns[3]) //FX Amount (can be +ve or negative)
               }).commitLine({
                 sublistId: 'line'
@@ -199,7 +199,9 @@ define(['N/format', 'N/record', 'N/search'],
             });
           });
 
-          let ns_account_for_amazon_account = getAmazonAccount(amazon_account);
+          let ns_amazon_account_results = getAmazonAccount(amazon_account);
+          ns_account_for_amazon_account = ns_amazon_account_results.account;
+          ns_marketplace_for_amazon_account = ns_amazon_account_results.marketplace;
 
           log.debug('Total', `${total_amount.toFixed(2)} `);
           log.debug('Amazon Account', `${amazon_account}  ${ns_account_for_amazon_account}`);
@@ -213,7 +215,7 @@ define(['N/format', 'N/record', 'N/search'],
             amazon_account_error = true;
           }
 
-          //Add Credit Line
+          //Add Debit Line
           record_journal.selectNewLine({
             sublistId: 'line'
           }).setCurrentSublistValue({
@@ -226,7 +228,7 @@ define(['N/format', 'N/record', 'N/search'],
             value: ''
           }).setCurrentSublistValue({
             sublistId: 'line',
-            fieldId: 'credit',
+            fieldId: 'debit',
             value: total_amount.toFixed(2) //total debit amount
           }).commitLine({
             sublistId: 'line'
@@ -240,11 +242,17 @@ define(['N/format', 'N/record', 'N/search'],
             value: num_exchangeRate
           });
 
+          //Marketplace
+          record_journal.setValue({
+            fieldId: 'cseg1',
+            value: ns_marketplace_for_amazon_account
+          });
+
           //Save the Journal
           if (!fee_type_account_error && !amazon_account_error) {
             record_journal.save({
-                enableSourcing: true,
-                ignoreMandatoryFields: false
+              enableSourcing: true,
+              ignoreMandatoryFields: false
             });
           }
 
@@ -277,6 +285,10 @@ define(['N/format', 'N/record', 'N/search'],
           SEARCH.createColumn({
             name: "custrecord_dal_ns_account",
             label: "Account"
+          }),
+          SEARCH.createColumn({
+            name: "custrecordhb_cus_marketplace",
+            label: "Marketplace"
           })
         ]
       });
@@ -288,10 +300,16 @@ define(['N/format', 'N/record', 'N/search'],
         account = result.getValue({
           name: 'custrecord_dal_ns_account'
         });
+        marketplace = result.getValue({
+          name: 'custrecordhb_cus_marketplace'
+        });
         return false;
       });
 
-      return account;
+      return {
+        account,
+        marketplace
+      };
     }
 
     function getFeeTypeAccount(feeType) {
