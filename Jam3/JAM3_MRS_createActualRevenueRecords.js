@@ -48,6 +48,7 @@ define(['N/search', 'N/record', 'N/error', 'N/runtime', 'N/email'], function(sea
 		var periodRevenue = parseFloat(res.values['SUM(amount)']).toFixed(2);
 		//log.debug('periodRevenue', periodRevenue);
 		var actualRevenueData = getActualRevenueByPeriod(accountingPeriod);
+    //log.debug('actualRevenueData', actualRevenueData);
 		var actualRevenueForPeriod = 0;
 
 		if(actualRevenueData.length > 0){
@@ -81,6 +82,7 @@ define(['N/search', 'N/record', 'N/error', 'N/runtime', 'N/email'], function(sea
 				if(periodRevenue != actualRevenueForPeriodPlus2){
 					if(periodRevenue != actualRevenueForPeriodMinus1){
 						if(periodRevenue !=actualRevenueForPeriodMinus2){
+              log.debug('The periodRevenue != The Actual', 'There is a Revenue mismatch for the period of: ', accountingPeriod + '.' + 'The Period Revenue is: ' + periodRevenue + ' .' + 'The Actual Revenue is: ' + actualRevenueForPeriod + '.');
 							deleteActualRevenueRecordsForPeriod(actualRevenueData);
 							context.write(accountingPeriod);
 						}
@@ -97,7 +99,7 @@ define(['N/search', 'N/record', 'N/error', 'N/runtime', 'N/email'], function(sea
 
 		if(actualRevenueData.length > 0){
 			for(var i=0; i<actualRevenueData.length; i++){
-				//log.debug('period', actualRevenueData[i].getValue('custrecord12'));
+				log.debug('period', actualRevenueData[i].getValue('custrecord12'));
 				record.delete({
 					type : 'customrecord_actual_rev_by_client',
 					id : actualRevenueData[i].id,
@@ -183,7 +185,7 @@ define(['N/search', 'N/record', 'N/error', 'N/runtime', 'N/email'], function(sea
 
 		var revSearch = search.create({
 			type : 'transaction',
-			filters : [["posting","is","T"], "AND",["account","anyof","344","1862","1863","953"], "AND", ["postingperiod","is", period]],
+			filters : [["posting","is","T"], "AND",["account","anyof","344","954","1862","1863","1864","1865","955"], "AND", ["postingperiod","is", period]],
 			columns : [search.createColumn({
 				name: "postingperiod",
 				summary: "GROUP"
