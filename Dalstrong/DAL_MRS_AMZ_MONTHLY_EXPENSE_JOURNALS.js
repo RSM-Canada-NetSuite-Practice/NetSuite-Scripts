@@ -139,6 +139,9 @@ function(FORMAT, RECORD, SEARCH) {
                 }).setValue({
                     fieldId: 'reversaldate',
                     value: date_reversal
+                }).setValue({
+                    fieldId:'custbodyrsm_journal_type',
+                    value: 5
                 });
 
                 let num_exchangeRate = '',
@@ -149,7 +152,7 @@ function(FORMAT, RECORD, SEARCH) {
                     amazon_account_error = false;
 
 
-                log.debug('REversal date', `${record_journal.getValue('reversaldate')}`);
+                log.debug('Reversal date', `${record_journal.getValue('reversaldate')}`);
 
 
                 //Add Fee Type to lines
@@ -249,7 +252,7 @@ function(FORMAT, RECORD, SEARCH) {
 
                 //Save the Journal
                 if(!fee_type_account_error && !amazon_account_error){
-                    /*record_journal.save({
+                   /*record_journal.save({
                         enableSourcing: true,
                         ignoreMandatoryFields: false
                     });*/
@@ -342,7 +345,7 @@ function(FORMAT, RECORD, SEARCH) {
     /* Get Current balance as per account, date and currency */
     function getCurrentAccountBalance(feeType, amazonMarketplace, date){
         let num_amount = 0;
-
+        let first_date = new Date(date.getFullYear(), date.GetMonth(), 1);
 
         //JE Search
         let transactionSearchObj = SEARCH.create({
@@ -353,7 +356,7 @@ function(FORMAT, RECORD, SEARCH) {
                     "AND",
                     ["posting","is","T"],
                     "AND",
-                    ["trandate","onorbefore",date],
+                    ["trandate","within",first_date,date],
                     "AND",
                     ["custbody_celigo_amzio_accounts.name","is",amazonMarketplace],
                     "AND",
