@@ -37,6 +37,12 @@ define(['N/format', 'N/record', 'N/search'],
             label: "Posted Day"
           }),
           SEARCH.createColumn({
+            name: "custrecordrsm_marketplace_cus_tran_settl",
+            join: "CUSTRECORD_CELIGO_AMZIO_SET_F_PAR_TRANS",
+            summary: "GROUP",
+            label: "Marketplace"
+          }),
+          SEARCH.createColumn({
             name: "custrecordhb_fee_currency",
             summary: "GROUP",
             label: "Currency"
@@ -54,9 +60,11 @@ define(['N/format', 'N/record', 'N/search'],
      * @since 2015.1
      */
     function map(context) {
+      //log.debug('Map', context.value);
       let object_current = JSON.parse(context.value),
         str_trandate = object_current["values"]["GROUP(formuladate)"],
         int_currency_id = object_current["values"]["GROUP(custrecordhb_fee_currency)"]["value"],
+        marketplace_id = object_current["values"]["GROUP(custrecordrsm_marketplace_cus_tran_settl.CUSTRECORD_CELIGO_AMZIO_SET_F_PAR_TRANS)"]["value"],
         temp_date = FORMAT.parse({
           value: str_trandate,
           type: FORMAT.Type.DATE,
@@ -70,49 +78,59 @@ define(['N/format', 'N/record', 'N/search'],
         details: `${str_trandate}  ${int_currency_id} ${new Date(str_trandate)}`
       });
 
-      //search to get all the Fee Types for the current Posted day and currency
+      //search to get all the Accounts for the current Posted day and Marketplace
 
       let search_celigo_amzio_sett_fee = SEARCH.create({
         type: "customrecord_celigo_amzio_sett_fee",
         filters: [
           ["formuladate: last_day(add_months({custrecordhb_amz_fee_posted_date}, 0))", "on", str_trandate],
           "AND",
-          ["custrecordhb_fee_currency", "anyof", int_currency_id]
+          ["custrecord_celigo_amzio_set_f_par_trans.custrecordrsm_marketplace_cus_tran_settl", "anyof", marketplace_id]
         ],
         columns: [
           columns[0] = SEARCH.createColumn({
-            name: "formulatext",
+            name: "custrecordhb_amz_fee_account",
             summary: "GROUP",
-            formula: "{custrecord_celigo_amzio_set_f_par_trans.custrecord_celigo_amzio_set_amz_account}",
-            label: "Amazon account"
+            label: "Account"
           }),
           columns[1] = SEARCH.createColumn({
-            name: "custrecord_celigo_amzio_set_f_fee_type",
+            name: "formuladate",
             summary: "GROUP",
-            label: "Fee Type"
+            formula: "last_day(add_months({custrecordhb_amz_fee_posted_date}, 0))",
+            sort: SEARCH.Sort.ASC,
+            label: "Posted Day"
           }),
           columns[2] = SEARCH.createColumn({
-            name: "formulacurrency",
+            name: "exchangerate",
+            join: "CUSTRECORDHB_FEE_CURRENCY",
             summary: "GROUP",
-            formula: "{custrecordhb_fee_currency.exchangerate}",
             label: "Exchange Rate"
           }),
           columns[3] = SEARCH.createColumn({
             name: "custrecord_celigo_amzio_set_f_amount",
             summary: "SUM",
-            label: "Amount (FX)"
+            label: "Amount"
           }),
           columns[4] = SEARCH.createColumn({
             name: "formulacurrency",
             summary: "SUM",
             formula: "{custrecord_celigo_amzio_set_f_amount}*{custrecordhb_fee_currency.exchangerate}",
-            label: "Amount (CAD)"
+            label: "Formula (Currency)"
+          }),
+          columns[5] = SEARCH.createColumn({
+            name: "custrecordrsm_marketplace_cus_tran_settl",
+            join: "CUSTRECORD_CELIGO_AMZIO_SET_F_PAR_TRANS",
+            summary: "GROUP",
+            label: "Marketplace"
           })
         ]
       });
 
       search_celigo_amzio_sett_fee.run().each(function(result) {
+        log.debug('account', result.getValue(columns[0]));
+        log.debug('marketplace', result.getValue(columns[5]));
         log.debug('exch rate', result.getValue(columns[2]));
+        log.debug('amount', result.getValue(columns[3]));
       });
 
 
@@ -141,7 +159,11 @@ define(['N/format', 'N/record', 'N/search'],
           }).setValue({
             fieldId: 'custbodyrsm_journal_type',
             value: 5
+          }).setValue({
+            fieldId: 'cseg1',
+            value: marketplace_id
           });
+          //log.debug('The journal has been created: ', record_journal);
 
           let num_exchangeRate = '',
             amazon_account = '',
@@ -165,22 +187,24 @@ define(['N/format', 'N/record', 'N/search'],
             });
             currPage.data.forEach(function(result) {
               !amazon_account ? amazon_account = result.getValue(columns[0]) : '';
+              log.debug('The amazon account to be set on the journal line is: ', amazon_account);
+              log.debug('The search result for amazon account is: ', result.getValue(columns[0]));
               !num_exchangeRate ? num_exchangeRate = result.getValue(columns[2]) : '';
               //total_amount += parseFloat(result.getValue(columns[3]));
 
-              ns_account_for_fee_type = getFeeTypeAccount(result.getValue(columns[1]));
-              let num_current_account_balance = getCurrentAccountBalance(result.getValue(columns[1]), amazon_account, str_trandate);
+              //ns_account_for_fee_type = getFeeTypeAccount(result.getValue(columns[1]));
+              let num_current_account_balance = getCurrentAccountBalance(result.getValue(columns[0]), marketplace_id, str_trandate);
 
               log.audit('Amount', `Actual ${result.getValue(columns[3])} Account ${num_current_account_balance}`);
 
               total_amount += ((-1 * parseFloat(result.getValue(columns[3]))) - num_current_account_balance);
               log.debug('The total amount is: ', total_amount);
 
-              if (!ns_account_for_fee_type) {
-                fee_type_account_error = true;
+              if (!amazon_account) {
+                account_type_account_error = true;
                 log.error({
-                  title: 'Invalid Fee Type',
-                  details: `No account found for ${result.getValue(columns[1])}`
+                  title: 'Invalid Account Type',
+                  details: `No account found for ${result.getValue(columns[0])} and marketplace ${result.getValue(columns[1])}`
                 });
               }
 
@@ -190,11 +214,11 @@ define(['N/format', 'N/record', 'N/search'],
               }).setCurrentSublistValue({
                 sublistId: 'line',
                 fieldId: 'account',
-                value: ns_account_for_fee_type //account as per fee type
-              }).setCurrentSublistValue({
-                sublistId: 'line',
-                fieldId: 'memo',
-                value: result.getValue(columns[1]) //fee type as memo
+                value: result.getValue(columns[0]) //account as per fee type
+                /*}).setCurrentSublistValue({
+                  sublistId: 'line',
+                  fieldId: 'memo',
+                  value: result.getValue(columns[1])*/ //fee type as memo
               }).setCurrentSublistValue({
                 sublistId: 'line',
                 fieldId: 'debit',
@@ -205,7 +229,8 @@ define(['N/format', 'N/record', 'N/search'],
             });
           });
 
-          let ns_amazon_account_results = getAmazonAccount(amazon_account);
+          log.debug('The marketplace id is: ', marketplace_id);
+          let ns_amazon_account_results = getAmazonAccount(marketplace_id);
           let ns_account_for_amazon_account = ns_amazon_account_results.account;
           let ns_marketplace_for_amazon_account = ns_amazon_account_results.marketplace;
 
@@ -273,28 +298,23 @@ define(['N/format', 'N/record', 'N/search'],
 
     }
 
-    function getAmazonAccount(amazonAccount) {
+    function getAmazonAccount(marketplace_id) {
       let account = '';
       let customrecord_dal_amzn_ns_acct_mappingSearchObj = SEARCH.create({
         type: "customrecord_dal_amzn_ns_acct_mapping",
         filters: [
-          ["name", "is", amazonAccount],
+          ["custrecordhb_cus_marketplace", "anyof", marketplace_id],
           "AND",
           ["isinactive", "is", "F"]
         ],
         columns: [
           SEARCH.createColumn({
-            name: "name",
-            sort: SEARCH.Sort.ASC,
-            label: "Amazon Account"
+            name: "custrecordhb_cus_marketplace",
+            label: "Marketplace"
           }),
           SEARCH.createColumn({
             name: "custrecord_dal_ns_account",
             label: "Account"
-          }),
-          SEARCH.createColumn({
-            name: "custrecordhb_cus_marketplace",
-            label: "Marketplace"
           })
         ]
       });
@@ -318,98 +338,61 @@ define(['N/format', 'N/record', 'N/search'],
       };
     }
 
-    function getFeeTypeAccount(feeType) {
-      let account = '';
-
-      let customrecord_dal_feetype_account_mappingSearchObj = SEARCH.create({
-        type: "customrecord_dal_feetype_account_mapping",
-        filters: [
-          ["name", "is", feeType],
-          "AND",
-          ["isinactive", "is", "F"]
-        ],
-        columns: [
-          SEARCH.createColumn({
-            name: "name",
-            sort: SEARCH.Sort.ASC,
-            label: "Name"
-          }),
-          SEARCH.createColumn({
-            name: "custrecord_dal_fee_type_account",
-            label: "Account"
-          })
-        ]
-      });
-
-      //let searchResultCount = customrecord_dal_feetype_account_mappingSearchObj.runPaged().count;
-      //log.debug("customrecord_dal_feetype_account_mappingSearchObj result count",searchResultCount);
-
-      customrecord_dal_feetype_account_mappingSearchObj.run().each(function(result) {
-        account = result.getValue({
-          name: 'custrecord_dal_fee_type_account'
-        });
-        return false;
-      });
-
-      return account;
-    }
-
     /* Get Current balance as per account, date and currency */
-    function getCurrentAccountBalance(feeType, amazonMarketplace, date) {
+    function getCurrentAccountBalance(account, amazonMarketplace, date) {
       let num_amount = 0;
       let first_date = date.slice(0, -2) + '01';
       log.debug('The first date is: ', first_date);
       log.debug('The date is: ', date);
-      log.debug('Fee type is: ', feeType);
       log.debug('Amazon marketplace is: ', amazonMarketplace);
+      log.debug('The account is: ', account);
 
       //JE Search
       let transactionSearchObj = SEARCH.create({
-        type: "transaction",
-        filters: [
-          ["systemnotes.type", "is", "T"],
-          "AND",
-          ["posting", "is", "T"],
-          "AND",
-          ["trandate", "within", first_date, date],
-          "AND",
-          ["custbody_celigo_amzio_accounts.name", "is", amazonMarketplace],
-          "AND",
-          ["custbodyrsm_journal_type","noneof","5"],
-          "AND",
-          ["memo", "contains", feeType]
-        ],
-        columns: [
-          SEARCH.createColumn({
-            name: "formulatext",
-            summary: "GROUP",
-            formula: "REPLACE({memo}, 'Fee charged by Amazon for ')",
-            label: "Fee Type"
-          }),
-          SEARCH.createColumn({
-            name: "fxamount",
-            summary: "SUM",
-            label: "Amount (FX)"
-          }),
-          SEARCH.createColumn({
-            name: "name",
-            join: "CUSTBODY_CELIGO_AMZIO_ACCOUNTS",
-            summary: "GROUP",
-            label: "Amz Acct Name"
-          }),
-          SEARCH.createColumn({
-            name: "custrecord_celigo_amzio_account_id",
-            join: "CUSTBODY_CELIGO_AMZIO_ACCOUNTS",
-            summary: "GROUP",
-            label: "Amz Acct ID"
-          }),
-          SEARCH.createColumn({
-            name: "cseg1",
-            summary: "GROUP",
-            label: "Marketplace"
-          })
-        ]
-      });
+   type: "transaction",
+   filters:
+   [
+      ["systemnotes.type","is","T"],
+      "AND",
+      ["posting","is","T"],
+      "AND",
+      ["trandate","within",first_date,date],
+      "AND",
+      ["account","anyof", account],
+      "AND",
+      ["custbodyrsm_journal_type","noneof","5"],
+      "AND",
+      ["cseg1","anyof", amazonMarketplace]
+   ],
+   columns:
+   [
+      SEARCH.createColumn({
+         name: "account",
+         summary: "GROUP",
+         label: "Account"
+      }),
+      SEARCH.createColumn({
+         name: "amount",
+         summary: "SUM",
+         label: "Amount (CAD)"
+      }),
+      SEARCH.createColumn({
+         name: "fxamount",
+         summary: "SUM",
+         label: "Amount (FX)"
+      }),
+      SEARCH.createColumn({
+         name: "currency",
+         summary: "GROUP",
+         label: "Currency"
+      }),
+      SEARCH.createColumn({
+         name: "cseg1",
+         summary: "GROUP",
+         label: "Marketplace"
+      })
+   ]
+});
 
       let searchResultCount = transactionSearchObj.runPaged().count;
       log.debug("transactionSearchObj result count", searchResultCount);
