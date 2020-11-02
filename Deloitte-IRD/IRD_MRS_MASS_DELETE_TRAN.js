@@ -1,7 +1,7 @@
 /*******************************************************************
  *
  *
- * Name: DAL_SUE_MASS_DELETE_TRAN.js
+ * Name: IRD_SUE_MASS_DELETE_TRAN.js
  * @NScriptType MapReduceScript
  * @NApiVersion 2.x
  * Version: 0.0.2
@@ -9,8 +9,8 @@
  *
  * Author: Nicolas Bean
  * Purpose: The purpose of this script is to delete Transactions
- * Script: DAL_SUE_MASS_DELETE_TRAN
- * Deploy: DAL_SUE_MASS_DELETE_TRAN
+ * Script: IRD_SUE_MASS_DELETE_TRAN
+ * Deploy: IRD_SUE_MASS_DELETE_TRAN
  *
  *
  * ******************************************************************* */
@@ -19,49 +19,40 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
 
   function getInputData() {
 
-    var customerpaymentSearchObj = search.create({
-   type: "customerpayment",
-   filters:
-   [
-      ["type","anyof","CustPymt"],
-      "AND",
-      ["cseg1","anyof","5","8","7","9","10","6"],
-      "AND",
-      ["mainline","is","T"]
-   ],
-   columns:
-   [
-      search.createColumn({
-         name: "ordertype",
-         sort: search.Sort.ASC,
-         label: "Order Type"
-      }),
-      search.createColumn({name: "mainline", label: "*"}),
-      search.createColumn({name: "trandate", label: "Date"}),
-      search.createColumn({name: "asofdate", label: "As-Of Date"}),
-      search.createColumn({name: "postingperiod", label: "Period"}),
-      search.createColumn({name: "taxperiod", label: "Tax Period"}),
-      search.createColumn({name: "type", label: "Type"}),
-      search.createColumn({name: "tranid", label: "Document Number"}),
-      search.createColumn({name: "entity", label: "Name"}),
-      search.createColumn({name: "account", label: "Account"}),
-      search.createColumn({name: "memo", label: "Memo"}),
-      search.createColumn({name: "amount", label: "Amount"}),
-      search.createColumn({name: "custbody_11187_pref_entity_bank", label: "Preferred Entity Bank"}),
-      search.createColumn({name: "custbody_11724_pay_bank_fees", label: "Vendor Bank Fees"}),
-      search.createColumn({name: "custbody_11724_bank_fee", label: "Bank Fee"})
-   ]
-});
-// var searchResultCount = customerpaymentSearchObj.runPaged().count;
-// log.debug("customerpaymentSearchObj result count",searchResultCount);
-// customerpaymentSearchObj.run().each(function(result){
-//    // .run().each has a limit of 4,000 results
-//    return true;
-// });
+    var transactionSearchObj = search.create({
+      type: "transaction",
+      filters: [
+        ["subsidiary", "anyof", "27", "23", "24", "26", "25", "28", "7"]
+      ],
+      columns: [
+        search.createColumn({
+          name: "internalid",
+          summary: "GROUP",
+          label: "Internal ID"
+        }),
+        search.createColumn({
+          name: "type",
+          summary: "GROUP",
+          label: "Type"
+        }),
+        search.createColumn({
+          name: "formulatext",
+          summary: "GROUP",
+          formula: "{recordType}",
+          label: "Record Type"
+        })
+      ]
+    });
+    // var searchResultCount = customerpaymentSearchObj.runPaged().count;
+    // log.debug("customerpaymentSearchObj result count",searchResultCount);
+    // customerpaymentSearchObj.run().each(function(result){
+    //    // .run().each has a limit of 4,000 results
+    //    return true;
+    // });
 
-    var res = customerpaymentSearchObj.run().getRange(0, 100);
+    var res = transactionSearchObj.run().getRange(0, 100);
     log.debug('getInputData', res.length + ' ' + JSON.stringify(res));
-    return customerpaymentSearchObj;
+    return transactionSearchObj;
 
   }
 
@@ -71,11 +62,11 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
 
     var res = JSON.parse(context.value);
 
-    var tranid = res.id;
+    var tranid = res["values"]["GROUP(internalid)"]["value"];
 
     log.debug('The Transaction internal ID is: ', tranid);
 
-    var recordtype = res.recordType;
+    var recordtype = res["values"]["GROUP(formulatext)"];
 
     log.debug('The record type is: ', recordtype);
 
