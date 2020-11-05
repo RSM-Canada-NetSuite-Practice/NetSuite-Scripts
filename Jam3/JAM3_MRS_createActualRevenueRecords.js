@@ -45,10 +45,11 @@ define(['N/search', 'N/record', 'N/error', 'N/runtime', 'N/email'], function(sea
     function map(context) {
 		var res = JSON.parse(context.value);
 		var accountingPeriod = res.values['GROUP(postingperiod)'].value;
+    log.debug('accountingPeriod', accountingPeriod);
 		var periodRevenue = parseFloat(res.values['SUM(amount)']).toFixed(2);
-		//log.debug('periodRevenue', periodRevenue);
+		log.debug('periodRevenue', periodRevenue);
 		var actualRevenueData = getActualRevenueByPeriod(accountingPeriod);
-    //log.debug('actualRevenueData', actualRevenueData);
+    log.debug('actualRevenueData', actualRevenueData);
 		var actualRevenueForPeriod = 0;
 
 		if(actualRevenueData.length > 0){
@@ -57,8 +58,8 @@ define(['N/search', 'N/record', 'N/error', 'N/runtime', 'N/email'], function(sea
 				actualRevenueForPeriod = actualRevenueForPeriod + parseFloat(actualRevenueData[i].getValue('custrecord13'));
 			}
 		}
-		//log.debug('actualRevenueForPeriod', actualRevenueForPeriod);
-		//log.debug('actualRevenueForPeriod', actualRevenueForPeriod.toFixed(2));
+		log.debug('actualRevenueForPeriod', actualRevenueForPeriod);
+		log.debug('actualRevenueForPeriod', actualRevenueForPeriod.toFixed(2));
 
 		var actualRevenueForPeriodPlus1 = actualRevenueForPeriod + 0.01;
 		actualRevenueForPeriodPlus1 = actualRevenueForPeriodPlus1.toFixed(2);
