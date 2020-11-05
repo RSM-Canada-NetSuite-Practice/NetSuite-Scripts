@@ -61,39 +61,22 @@ define(['N/search', 'N/record', 'N/error', 'N/runtime', 'N/email'], function(sea
 		log.debug('actualRevenueForPeriod', actualRevenueForPeriod);
 		log.debug('actualRevenueForPeriod', actualRevenueForPeriod.toFixed(2));
 
-		var actualRevenueForPeriodPlus1 = actualRevenueForPeriod + 0.01;
+		var actualRevenueForPeriodPlus1 = actualRevenueForPeriod + 0.50;
 		actualRevenueForPeriodPlus1 = actualRevenueForPeriodPlus1.toFixed(2);
-		//log.debug('actualRevenueForPeriodPlus1', actualRevenueForPeriodPlus1);
+		log.debug('actualRevenueForPeriodPlus1', actualRevenueForPeriodPlus1);
 
-		var actualRevenueForPeriodPlus2 = actualRevenueForPeriod + 0.02;
-		actualRevenueForPeriodPlus2 = actualRevenueForPeriodPlus2.toFixed(2);
-		//log.debug('actualRevenueForPeriodPlus2', actualRevenueForPeriodPlus2);
-
-		var actualRevenueForPeriodMinus1 = actualRevenueForPeriod - 0.01;
+		var actualRevenueForPeriodMinus1 = actualRevenueForPeriod - 0.50;
 		actualRevenueForPeriodMinus1 = actualRevenueForPeriodMinus1.toFixed(2);
-		//log.debug('actualRevenueForPeriodMinus1', actualRevenueForPeriodMinus1);
-
-		var actualRevenueForPeriodMinus2 = actualRevenueForPeriod - 0.02;
-		actualRevenueForPeriodMinus2 = actualRevenueForPeriodMinus2.toFixed(2);
-		//log.debug('actualRevenueForPeriodMinus2', actualRevenueForPeriodMinus2);
+		log.debug('actualRevenueForPeriodMinus1', actualRevenueForPeriodMinus1);
 
 
-		if(periodRevenue != actualRevenueForPeriod.toFixed(2)){
-			if(periodRevenue != actualRevenueForPeriodPlus1){
-				if(periodRevenue != actualRevenueForPeriodPlus2){
-					if(periodRevenue != actualRevenueForPeriodMinus1){
-						if(periodRevenue !=actualRevenueForPeriodMinus2){
-              log.debug('The periodRevenue != The Actual', 'There is a Revenue mismatch for the period of: ', accountingPeriod + '.' + 'The Period Revenue is: ' + periodRevenue + ' .' + 'The Actual Revenue is: ' + actualRevenueForPeriod + '.');
-							deleteActualRevenueRecordsForPeriod(actualRevenueData);
-							context.write(accountingPeriod);
-						}
-					}
-				}
-			}
-		}
-		else{
-			log.debug('equal');
-		}
+		if(periodRevenue > actualRevenueForPeriodPlus1 || periodRevenue < actualRevenueForPeriodMinus1){
+      log.debug('The periodRevenue != The Actual', 'There is a Revenue mismatch for the period of: ', accountingPeriod + '.' + 'The Period Revenue is: ' + periodRevenue + ' .' + 'The Actual Revenue is: ' + actualRevenueForPeriod + '.');
+			deleteActualRevenueRecordsForPeriod(actualRevenueData);
+			context.write(accountingPeriod);
+		}		else {
+      log.debug('equal');
+    }
     }
 
 	function deleteActualRevenueRecordsForPeriod(actualRevenueData){
