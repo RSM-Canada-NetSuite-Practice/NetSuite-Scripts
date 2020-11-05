@@ -1,15 +1,15 @@
 /*******************************************************************
  *
  *
- * Name: DAL_MRS_AMZ_CONSOLIDATION_JOURNALS.js
+ * Name: OO_MRS_ITEM_FULFILLMENT_PACKAGES.js
  * @NScriptType MapReduceScript
  * @NApiVersion 2.x
  * Version: 0.0.1
  *
  *
  * Author: Nicolas Bean
- * Purpose: The purpose of this script is to move money from the consolidation account for each marketplace to the corresponding bank account
- * Script: DAL_MRS_AMZ_CONSOLIDATION_JOURNALS.js
+ * Purpose: The purpose of this script is to remove blank package lines
+ * Script: OO_MRS_ITEM_FULFILLMENT_PACKAGES.js
  * Deploy:
  *
  *
