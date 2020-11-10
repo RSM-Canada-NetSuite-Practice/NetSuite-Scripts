@@ -34,12 +34,12 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
         "AND",
         ["trandate", "within", "thisfiscalyear"],
         "AND",
-        ["internalidnumber", "equalto", "3737444"],
-        "AND",
         ["shipping", "is", "T"],
         "AND",
-        ["formulanumeric: CASE WHEN MAX({packagecount}) > COUNT({shipmentpackage.trackingnumber}) THEN 1 ELSE 0 END","is","1"]
-     ],
+        ["custbody_celigo_etail_channel", "anyof", "101"],
+        "AND",
+        ["formulanumeric: CASE WHEN MAX({packagecount}) > COUNT({shipmentpackage.trackingnumber}) THEN 1 ELSE 0 END", "is", "1"]
+      ],
       columns: [
         search.createColumn({
           name: "internalid",
@@ -130,7 +130,7 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
       log.debug('packagesublist', packagesublist);
       log.debug('trackingnumber', trackingnumber);
 
-      for (var i = 0; i < lines; i++) {
+      for (var i = lines-1; i >= 0; i--) {
         var temptracking = objRecord.getSublistValue({
           sublistId: packagesublist,
           fieldId: trackingnumber,
@@ -148,7 +148,7 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
         }
       }
 
-      //objRecord.save();
+      objRecord.save();
 
 
     } catch (e) {
