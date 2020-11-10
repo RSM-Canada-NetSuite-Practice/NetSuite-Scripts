@@ -1,185 +1,210 @@
 /*******************************************************************
  *
  *
- * Name: OO_MRS_ITEM_FULFILLMENT_PACKAGES.js
+ * Name: HB_MRS_Ooze_Remove_Blank_Package_Lines.js
  * @NScriptType MapReduceScript
  * @NApiVersion 2.x
- * Version: 0.0.1
+ * Version: 0.0.2
  *
  *
  * Author: Nicolas Bean
- * Purpose: The purpose of this script is to remove blank package lines
- * Script: OO_MRS_ITEM_FULFILLMENT_PACKAGES.js
- * Deploy:
+ * Purpose: The purpose of this script is to remove blank package lines from Item Fulfillments (no tracking nubmer)
+ * Script: HB_MRS_Ooze_Remove_Blank_Package_Lines
+ * Deploy: HB_MRS_Ooze_Remove_Blank_Package_Lines
  *
  *
  * ******************************************************************* */
 
-define(['N/format', 'N/record', 'N/search'], function(format, record, search) {
+define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, record, currency) {
 
   function getInputData() {
-    //Search to get unique Fulfillment with more than one package and that has at least one empty tracking number
+
     var itemfulfillmentSearchObj = search.create({
       type: "itemfulfillment",
       filters: [
         ["type", "anyof", "ItemShip"],
         "AND",
-        ["mainline", "is", "T"],
-        "AND",
-        ["trandate", "onorafter", "10/1/2020"],
-        "AND",
-        ["internalidnumber", "equalto", "3335527"],
-        "AND",
         ["packagecount", "greaterthan", "1"],
         "AND",
-        ["max(formulanumeric: CASE WHEN MAX({packagecount}) > COUNT({shipmentpackage.trackingnumber}) THEN 1 ELSE 0 END)", "equalto", "1"]
-      ],
+        ["taxline", "is", "F"],
+        "AND",
+        ["cogs", "is", "F"],
+        "AND",
+        ["mainline", "is", "F"],
+        "AND",
+        ["trandate", "within", "thisfiscalyear"],
+        "AND",
+        ["internalidnumber", "equalto", "3737444"],
+        "AND",
+        ["shipping", "is", "T"],
+        "AND",
+        ["formulanumeric: CASE WHEN MAX({packagecount}) > COUNT({shipmentpackage.trackingnumber}) THEN 1 ELSE 0 END","is","1"]
+     ],
       columns: [
         search.createColumn({
           name: "internalid",
-          summary: "GROUP",
           label: "Internal ID"
         }),
         search.createColumn({
           name: "trandate",
-          summary: "GROUP",
           sort: search.Sort.DESC,
           label: "Date"
         }),
         search.createColumn({
+          name: "postingperiod",
+          label: "Period"
+        }),
+        search.createColumn({
           name: "type",
-          summary: "GROUP",
           label: "Type"
         }),
         search.createColumn({
           name: "tranid",
-          summary: "GROUP",
           label: "Document Number"
-        }),
-        search.createColumn({
-          name: "packagecount",
-          summary: "MAX",
-          label: "Package Count"
-        }),
-        search.createColumn({
-          name: "contentsdescription",
-          join: "shipmentPackage",
-          summary: "GROUP",
-          label: "Contents Description"
-        }),
-        search.createColumn({
-          name: "weightinlbs",
-          join: "shipmentPackage",
-          summary: "SUM",
-          label: "Weight In Pounts"
         })
       ]
     });
 
+    var res = itemfulfillmentSearchObj.run().getRange(0, 100);
+    log.debug('getInputData', res.length + ' ' + JSON.stringify(res));
     return itemfulfillmentSearchObj;
+
   }
 
   function map(context) {
-    //log.debug('Map', context.value);
-    var object_current = JSON.parse(context.value),
-      internalid = object_current["values"]["GROUP(internalid)"]["value"];
-    packagecount = object_current["values"]["MAX(packagecount)"];
-    log.debug('internalid', internalid);
-    log.debug('packagecount', packagecount);
-    log.debug('The current object is:', object_current);
+
+    log.debug('Map', context.value);
+
+    var res = JSON.parse(context.value);
+    var id = res.id;
+    var type = res.recordType;
 
     try {
 
-      //loop through package lines
-      rec = record.load({
+      objRecord = record.load({
         type: 'itemfulfillment',
-        id: internalid,
-        isDynamic: true
+        id: id,
+        isDynamic: true,
       });
-      var templines = rec.getLineCount({
+      log.debug('objRecord', objRecord);
+
+      var upslines = objRecord.getLineCount({
+        sublistId: 'packageups'
+      });
+      log.debug('upslines', upslines);
+      var fedexlines = objRecord.getLineCount({
+        sublistId: 'packagefedex'
+      });
+      log.debug('fedexlines', fedexlines);
+      var packagelines = objRecord.getLineCount({
         sublistId: 'package'
       });
-      log.debug('The package sublist line count is:', templines);
-      var templinesusps = rec.getLineCount({
+      log.debug('packagelines', packagelines);
+      var uspslines = objRecord.getLineCount({
         sublistId: 'packageusps'
       });
-      log.debug('The package usps line count is: ', templinesusps);
+      log.debug('uspslines', uspslines);
 
-      if (templines > 1) {
-        for (var i = 0; i < templines; i++) {
-          rec.selectLine({
-            sublistId: 'package',
-            line: i
+      var lines = '';
+      var packagesublist = '';
+
+      if (upslines > 1) {
+        lines = upslines;
+        packagesublist = 'packageups';
+        trackingnumber = 'packagetrackingnumberups';
+      } else if (fedexlines > 1) {
+        lines = fedexlines;
+        packagesublist = 'packagefedex';
+        trackingnumber = 'packagetrackingnumberfedex';
+      } else if (packagelines > 1) {
+        lines = upslines;
+        packagesublist = 'package';
+        trackingnumber = 'packagetrackingnumber';
+      } else if (uspslines > 1) {
+        lines = uspslines;
+        packagesublist = 'packageusps';
+        trackingnumber = 'packagetrackingnumberusps';
+      }
+
+      log.debug('lines', lines);
+      log.debug('packagesublist', packagesublist);
+      log.debug('trackingnumber', trackingnumber);
+
+      for (var i = 0; i < lines; i++) {
+        var temptracking = objRecord.getSublistValue({
+          sublistId: packagesublist,
+          fieldId: trackingnumber,
+          line: i
+        });
+        log.debug('Looping on line: ' + i, 'Tracking number on line ' + i + 'is: ' + temptracking);
+
+        if (!temptracking) {
+          objRecord.removeLine({
+            sublistId: packagesublist,
+            line: i,
+            ignoreRecalc: true
           });
-          var trackingother = rec.getCurrentSublistValue({
-            sublistId: 'package',
-            fieldId: 'packagetrackingnumber'
-          });
-          if (trackingother == '') {
-            rec.removeLine({
-              sublistId: 'package',
-              line: i
-            });
-          }
-        }
-      } else if (templinesusps > 1) {
-        for (var j = 0; j < templinesusps; j++) {
-          rec.selectLine({
-            sublistId: 'packageusps',
-            line: j
-          });
-          var currindexusps = rec.getCurrentSublistIndex({
-            sublistId: 'packageusps'
-          });
-          log.debug('currindexusps',currindexusps);
-          var trackingusps = rec.getCurrentSublistValue({
-            sublistId: 'packageusps',
-            fieldId: 'packagetrackingnumberusps'
-          });
-          log.debug('trackingusps', trackingusps);
-          if (trackingusps == '') {
-            rec.removeLine({
-              sublistId: 'packageusps',
-              line: j
-            });
-          }
+          log.debug('Line: ' + i, 'has been removed');
         }
       }
 
-      //rec.save();
+      //objRecord.save();
+
 
     } catch (e) {
+
       log.debug('Error reads: ', e.name + e.message);
+
     }
 
   }
 
-  /**
-   * Executes when the reduce entry point is triggered and applies to each group.
-   *
-   * @param {ReduceSummary} context - Data collection containing the groups to process through the reduce stage
-   * @since 2015.1
-   */
   function reduce(context) {
 
-  }
-
-
-  /**
-   * Executes when the summarize entry point is triggered and applies to the result set.
-   *
-   * @param {Summary} summary - Holds statistics regarding the execution of a map/reduce script
-   * @since 2015.1
-   */
-  function summarize(summary) {
+    log.debug('Reduce');
 
   }
 
+  function summarize(context) {
+
+    // Log details about the script's execution.
+    log.audit({
+      title: 'Usage units consumed',
+      details: context.usage
+    });
+    log.audit({
+      title: 'Concurrency',
+      details: context.concurrency
+    });
+    log.audit({
+      title: 'Number of yields',
+      details: context.yields
+    });
+
+    // Use the context object's output iterator to gather the key/value pairs saved
+    // at the end of the reduce stage. Also, tabulate the number of key/value pairs
+    // that were saved. This number represents the total number of unique letters
+    // used in the original string.
+    var text = '';
+    var totalKeysSaved = 0;
+    context.output.iterator().each(function(key, value) {
+      text += (key + ' ' + value + '\n');
+      totalKeysSaved++;
+      return true;
+    });
+
+    // Log details about the total number of pairs saved.
+    log.audit({
+      title: 'Unique number of letters used in string',
+      details: totalKeysSaved
+    });
+  }
+
+  // Link each entry point to the appropriate function.
   return {
     getInputData: getInputData,
     map: map,
     reduce: reduce,
     summarize: summarize
   };
-
 });
