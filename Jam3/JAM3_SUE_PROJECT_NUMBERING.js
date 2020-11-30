@@ -21,6 +21,7 @@ define(['N/record', 'N/log', 'N/search'], function(record, log, search) {
     27: 0,
     34: 1,
     36: 1,
+    37: 2,
     35: 2
   };
 
@@ -59,7 +60,7 @@ define(['N/record', 'N/log', 'N/search'], function(record, log, search) {
           ],
           "OR",
           [
-            ["status", "anyof", "32"], "AND", ["entityid", "startswith", "3"]
+            ["status","anyof","32","37"],"AND",["entityid","startswith","3"]
           ],
           "OR",
           [
