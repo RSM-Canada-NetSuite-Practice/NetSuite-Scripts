@@ -60,7 +60,7 @@ define(['N/record', 'N/log', 'N/search'], function(record, log, search) {
           ],
           "OR",
           [
-            ["status","anyof","32","37"],"AND",["entityid","startswith","3"]
+            ["status", "anyof", "32", "37"], "AND", ["entityid", "startswith", "3"]
           ],
           "OR",
           [
