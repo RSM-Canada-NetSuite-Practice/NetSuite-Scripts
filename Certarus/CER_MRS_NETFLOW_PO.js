@@ -153,53 +153,68 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
     });
     log.debug('cusid', cusid);
 
+    // Get the location (custom field) from the project record
     var joblocation = jobres[0].getValue({
       name: 'custentitycert_proj_location'
     });
     log.debug('joblocation', joblocation);
 
+    // Map the invoice unit of measure (custom field) from the project record to get the custom field ID
     var tempinvoiceuom = getInvoiceBillingUnit(billingtype);
+    log.debug('tempinvoiceuom', tempinvoiceuom);
     var invoiceuom = tempinvoiceuom[0].getValue({
       name: 'custrecordcert_cus_map_invoice_del'
     });
     log.debug('invoiceuom', invoiceuom);
 
-    var poinformation = getpovendorandrate(joblocation, billingid);
-    log.debug('poinformation', poinformation);
-
-    var porate = poinformation[0].getValue({
-      name: 'custrecord_cost_price'
+    // Map the invoice unit of measure (custom field) from the project to get the real unit of measure to use on the PO
+    var pouom = tempinvoiceuom[0].getValue({
+      name: 'custrecordcert_cus_inv_uom'
     });
-    log.debug('porate', porate);
+    log.debug('pouom', pouom);
+
+    // Map the correct vendor based on the project location (based on the custom record)
+    var poinformation = getPoVendor(joblocation);
+    log.debug('poinformation', poinformation);
     var povendor = poinformation[0].getValue({
       name: 'custrecord_cost_vendor'
     });
     log.debug('povendor', povendor);
 
-    // Get the volume to be invoiced from the custom record
+    // Load the custom record
     var cusrecord = record.load({
       type: 'customrecord_netflow_raw',
       id: cusrecordid
     });
+
+    // Get the volume to be put on the PO (invoiced) from the netflow custom record
     var invoiceqty = cusrecord.getValue({
       fieldId: invoiceuom
     });
     log.debug('invoiceqty', invoiceqty);
+
+    // Get the PO date from the netflow custom record
     var proddate = cusrecord.getValue({
       fieldId: 'custrecord_production_date'
     });
     log.debug('proddate', proddate);
 
+    // Get standard cost from item record based on project location
+    var porate = jobres[0].getValue({
+      name: 'custentitycert_cus_proj_cng_rate'
+    });
+    log.debug('porate', porate);
+
 
     try {
 
       // Create PO
-      var temppo = record.create({
-        type: 'purchaseorder',
+      var tempinvoice = record.create({
+        type: 'invoice',
         isDynamic: true,
       });
 
-      temppo.setValue({
+      tempinvoice.setValue({
         fieldId: 'entity',
         value: povendor
       }).setValue({
@@ -208,72 +223,42 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
       }).setValue({
         fieldId: 'location',
         value: joblocation
+      }).setValue({
+        fieldId: 'job',
+        value: jobid
       });
 
-      temppo.selectNewLine({
-          sublistId: 'item'
-        }).setCurrentSublistValue({
-          sublistId: 'item',
-          fieldId: 'item',
-          value: 39
-        }).setCurrentSublistValue({
-          sublistId: 'item',
-          fieldId: 'quantity',
-          value: invoiceqty
-        }).setCurrentSublistValue({
-          sublistId: 'item',
-          fieldId: 'rate',
-          value: porate
-        })
-        /*.setCurrentSublistValue({
-                sublistId: 'item',
-                fieldId: 'taxcode',
-                value: 14
-              })*/
-        .setCurrentSublistValue({
-          sublistId: 'item',
-          fieldId: 'isbillable',
-          value: true,
-        }).setCurrentSublistValue({
-          sublistId: 'item',
-          fieldId: 'customer',
-          value: jobid,
-        }).commitLine({
-          sublistId: 'item'
-        });
-      log.debug('temppo', temppo);
-
-      // Save record
-      var poid = temppo.save();
-      log.debug('poid', poid);
-
-      var tempporate = temppo.getSublistValue({
+      tempinvoice.selectNewLine({
+        sublistId: 'item'
+      }).setCurrentSublistValue({
         sublistId: 'item',
-        fieldId: 'itemrate',
-        line: 0
+        fieldId: 'item',
+        value: 46
+      }).setCurrentSublistValue({
+        sublistId: 'item',
+        fieldId: 'units',
+        value: pouom
+      }).setCurrentSublistValue({
+        sublistId: 'item',
+        fieldId: 'quantity',
+        value: invoiceqty
+      }).setCurrentSublistValue({
+        sublistId: 'item',
+        fieldId: 'rate',
+        value: porate
+      }).commitLine({
+        sublistId: 'item'
       });
+      log.debug('tempinvoice', tempinvoice);
 
-      // Create item receipt
-      var tempir = record.transform({
-        fromType: 'purchaseorder',
-        fromId: poid,
-        toType: 'itemreceipt'
-      });
+      // Save PO record
+      var invoiceid = tempinvoice.save();
+      log.debug('invoiceid', invoiceid);
 
-      tempir.setValue({
-        fieldId: 'trandate',
-        value: proddate
-      });
-
-      var irid = tempir.save();
-
-      // Set PO and IR to cus record
+      // Set PO to netflow custom record
       cusrecord.setValue({
         fieldId: 'custrecordcert_netflow_po',
-        value: poid
-      }).setValue({
-        fieldId: 'custrecordcer_netflow_item_receipt',
-        value: irid
+        value: invoiceid
       }).setValue({
         fieldId: 'custrecordcert_cus_netflow_project',
         value: jobid
@@ -307,6 +292,10 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
           search.createColumn({
             name: "custentitycert_proj_location",
             label: "Location"
+          }),
+          search.createColumn({
+            name: "custentitycert_cus_proj_cng_rate",
+            label: "CNG Rate"
           })
         ]
       });
@@ -331,6 +320,10 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
           search.createColumn({
             name: "custrecordcert_cus_map_invoice_del",
             label: "Custom Field Alias"
+          }),
+          search.createColumn({
+            name: "custrecordcert_cus_inv_uom",
+            label: "Internal ID (uom)"
           })
         ]
       });
@@ -339,14 +332,12 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
       return invoicebillingtype;
     }
 
-    // Map the vendor and gas cost
-    function getpovendorandrate(location, uom) {
+    // Map the vendor
+    function getPoVendor(location) {
       var customrecord_gas_costSearchObj = search.create({
         type: "customrecord_gas_cost",
         filters: [
-          ["custrecord_cost_location", "anyof", location],
-          "AND",
-          ["custrecord_cost_uom", "anyof", uom]
+          ["custrecord_cost_location", "anyof", location]
         ],
         columns: [
           search.createColumn({
@@ -376,6 +367,7 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
       var poinformation = customrecord_gas_costSearchObj.run().getRange(0, 1);
       return poinformation;
     }
+
   }
 
   function reduce(context) {

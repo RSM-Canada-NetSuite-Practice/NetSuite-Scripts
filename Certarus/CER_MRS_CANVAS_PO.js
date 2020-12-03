@@ -152,16 +152,11 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
               sublistId: 'item',
               fieldId: 'rate',
               value: 1
-            })
             /*.setCurrentSublistValue({
                     sublistId: 'item',
                     fieldId: 'taxcode',
                     value: 14
                   })*/
-            .setCurrentSublistValue({
-              sublistId: 'item',
-              fieldId: 'isbillable',
-              value: true,
             }).setCurrentSublistValue({
               sublistId: 'item',
               fieldId: 'customer',

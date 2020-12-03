@@ -19,49 +19,11 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
 
   function getInputData() {
 
-    var customerpaymentSearchObj = search.create({
-   type: "customerpayment",
-   filters:
-   [
-      ["type","anyof","CustPymt"],
-      "AND",
-      ["cseg1","anyof","5","8","7","9","10","6"],
-      "AND",
-      ["mainline","is","T"]
-   ],
-   columns:
-   [
-      search.createColumn({
-         name: "ordertype",
-         sort: search.Sort.ASC,
-         label: "Order Type"
-      }),
-      search.createColumn({name: "mainline", label: "*"}),
-      search.createColumn({name: "trandate", label: "Date"}),
-      search.createColumn({name: "asofdate", label: "As-Of Date"}),
-      search.createColumn({name: "postingperiod", label: "Period"}),
-      search.createColumn({name: "taxperiod", label: "Tax Period"}),
-      search.createColumn({name: "type", label: "Type"}),
-      search.createColumn({name: "tranid", label: "Document Number"}),
-      search.createColumn({name: "entity", label: "Name"}),
-      search.createColumn({name: "account", label: "Account"}),
-      search.createColumn({name: "memo", label: "Memo"}),
-      search.createColumn({name: "amount", label: "Amount"}),
-      search.createColumn({name: "custbody_11187_pref_entity_bank", label: "Preferred Entity Bank"}),
-      search.createColumn({name: "custbody_11724_pay_bank_fees", label: "Vendor Bank Fees"}),
-      search.createColumn({name: "custbody_11724_bank_fee", label: "Bank Fee"})
-   ]
-});
-// var searchResultCount = customerpaymentSearchObj.runPaged().count;
-// log.debug("customerpaymentSearchObj result count",searchResultCount);
-// customerpaymentSearchObj.run().each(function(result){
-//    // .run().each has a limit of 4,000 results
-//    return true;
-// });
-
-    var res = customerpaymentSearchObj.run().getRange(0, 100);
-    log.debug('getInputData', res.length + ' ' + JSON.stringify(res));
-    return customerpaymentSearchObj;
+    function getInputData() {
+      return search.load({
+        id: 'customsearch1349'
+      });
+    }
 
   }
 

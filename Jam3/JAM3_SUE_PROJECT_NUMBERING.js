@@ -71,7 +71,7 @@ define(['N/record', 'N/log', 'N/search'], function(record, log, search) {
           search.createColumn({
             name: "formulatext",
             summary: "GROUP",
-            formula: "CASE WHEN {status} = 'Internal' THEN 'Internal' WHEN {status} = 'Pitching' THEN 'Pitching' ELSE 'Other' END",
+            formula: "CASE WHEN {status} IN ('Internal','Internal-Closed') THEN 'Internal' WHEN {status} IN ('Pitching','Pitching-Closed') THEN 'Pitching' ELSE 'Other' END",
             label: "Status"
           }),
           search.createColumn({
