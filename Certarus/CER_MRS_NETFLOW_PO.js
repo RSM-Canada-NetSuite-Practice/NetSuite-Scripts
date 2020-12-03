@@ -22,7 +22,7 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
     var customrecord_netflow_rawSearchObj = search.create({
       type: "customrecord_netflow_raw",
       filters: [
-        ["custrecordcert_netflow_po", "anyof", "@NONE@"]
+        ["custrecordcert_netflow_invoice", "anyof", "@NONE@"]
       ],
       columns: [
         search.createColumn({
@@ -114,7 +114,7 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
           label: "Mass Tonne"
         }),
         search.createColumn({
-          name: "custrecordcert_netflow_po",
+          name: "custrecordcert_netflow_invoice",
           label: "Purchase Order"
         })
       ]
@@ -257,7 +257,7 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
 
       // Set PO to netflow custom record
       cusrecord.setValue({
-        fieldId: 'custrecordcert_netflow_po',
+        fieldId: 'custrecordcert_netflow_invoice',
         value: invoiceid
       }).setValue({
         fieldId: 'custrecordcert_cus_netflow_project',
