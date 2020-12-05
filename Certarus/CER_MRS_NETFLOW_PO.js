@@ -200,10 +200,10 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
     log.debug('proddate', proddate);
 
     // Get standard cost from item record based on project location
-    var porate = jobres[0].getValue({
+    var invoicerate = jobres[0].getValue({
       name: 'custentitycert_cus_proj_cng_rate'
     });
-    log.debug('porate', porate);
+    log.debug('invoicerate', invoicerate);
 
 
     try {
@@ -216,7 +216,7 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
 
       tempinvoice.setValue({
         fieldId: 'entity',
-        value: povendor
+        value: cusid
       }).setValue({
         fieldId: 'trandate',
         value: proddate
@@ -233,7 +233,7 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
       }).setCurrentSublistValue({
         sublistId: 'item',
         fieldId: 'item',
-        value: 46
+        value: 51
       }).setCurrentSublistValue({
         sublistId: 'item',
         fieldId: 'units',
@@ -245,7 +245,7 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
       }).setCurrentSublistValue({
         sublistId: 'item',
         fieldId: 'rate',
-        value: porate
+        value: invoicerate
       }).commitLine({
         sublistId: 'item'
       });
