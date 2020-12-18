@@ -28,7 +28,7 @@ define(['N/record', 'N/search', 'N/log'],
       log.debug('invoicejob', invoicejob);
 
       // If the project is empty, do not trigger
-      if (invoicejob != null || invoicejob != '') {
+      if (invoicejob) {
 
         // Fetch project zip & city
         var tempproject = search.lookupFields({
