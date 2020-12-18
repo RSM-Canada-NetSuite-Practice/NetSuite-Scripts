@@ -201,10 +201,6 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
         value: hours
       }).setCurrentSublistValue({
         sublistId: 'item',
-        fieldId: 'rate',
-        value: 1
-      }).setCurrentSublistValue({
-        sublistId: 'item',
         fieldId: 'customer',
         value: jobid,
       }).commitLine({

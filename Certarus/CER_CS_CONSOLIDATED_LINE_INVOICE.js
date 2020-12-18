@@ -47,13 +47,6 @@ define(['N/record', 'N/search', 'N/log'],
           }
         });
         log.debug('consolidated set to false');
-        /*.submitFields({
-                type: 'invoice',
-                id: oldinvoice,
-                values: {
-                  custbody_consolidated_invoice_number: null
-                }
-              })*/
 
         if (newinvoice != '') {
           record.submitFields({
