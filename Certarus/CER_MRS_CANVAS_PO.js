@@ -95,28 +95,37 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
     log.debug('job', job);
     var billable = res.values.custrecord_is_billable;
     log.debug('billable', billable);
-    var jobres = getProjectInformation(job);
-    log.debug('jobres', jobres);
-    var jobid = jobres[0].id;
-    log.debug('jobid', jobid);
 
-    var cusid = jobres[0].getValue({
-      name: "internalid",
-      join: "customer",
-    });
-    log.debug('cusid', cusid);
-    var jobdepartment = jobres[0].getValue({
-      name: "custentity_cert_proj_dept"
-    });
-    log.debug('projdepartment', projdepartment);
-    var jobclass = jobres[0].getValue({
-      name: "custentity_cert_proj_class"
-    });
-    log.debug('projclass', projclass);
-    var jobcustype = jobres[0].getValue({
-      name: "cseg_cert_custype"
-    });
-    log.debug('projcustype', projcustype);
+    if (billable == 'T') {
+
+      var jobres = getProjectInformation(job);
+      log.debug('jobres', jobres);
+      var jobid = jobres[0].id;
+      log.debug('jobid', jobid);
+
+      var cusid = jobres[0].getValue({
+        name: "internalid",
+        join: "customer",
+      });
+      log.debug('cusid', cusid);
+      var jobdepartment = jobres[0].getValue({
+        name: "custentity_cert_proj_dept"
+      });
+      log.debug('jobdepartment', jobdepartment);
+      var jobclass = jobres[0].getValue({
+        name: "custentity_cert_proj_class"
+      });
+      log.debug('jobclass', jobclass);
+      var jobcustype = jobres[0].getValue({
+        name: "cseg_cert_custype"
+      });
+      log.debug('jobcustype', jobcustype);
+      var joblocationfromjob = jobres[0].getValue({
+        name: "custentitycert_proj_location"
+      });
+      log.debug('joblocationfromjob', joblocationfromjob);
+
+    }
 
     var joblocation = getJobLocation(shortlocation);
     log.debug('joblocation', joblocation);
@@ -151,12 +160,9 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
       }).setValue({
         fieldId: 'trandate',
         value: proddate
-      }).setValue({
-        fieldId: 'location',
-        value: joblocation
       });
 
-      if (billable == 'T' || billable == true) {
+      if (billable == 'T') {
         temppo.setValue({
           fieldId: 'department',
           value: jobdepartment
@@ -166,14 +172,20 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
         }).setValue({
           fieldId: 'cseg_cert_custype',
           value: jobcustype
+        }).setValue({
+          fieldId: 'location',
+          value: joblocationfromjob
         });
       } else {
-        tempo.setValue({
+        temppo.setValue({
           fieldId: 'department',
-          value: value
+          value: 4
         }).setValue({
           fieldId: 'class',
-          value: value
+          value: 3
+        }).setValue({
+          fieldId: 'location',
+          value: joblocation
         });
       }
 
@@ -191,11 +203,6 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
         sublistId: 'item',
         fieldId: 'rate',
         value: 1
-        /*.setCurrentSublistValue({
-                sublistId: 'item',
-                fieldId: 'taxcode',
-                value: 14
-              })*/
       }).setCurrentSublistValue({
         sublistId: 'item',
         fieldId: 'customer',
@@ -208,12 +215,6 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
       // Save record
       var poid = temppo.save();
       log.debug('poid', poid);
-
-      var tempporate = temppo.getSublistValue({
-        sublistId: 'item',
-        fieldId: 'itemrate',
-        line: 0
-      });
 
       // Create item receipt
       var tempir = record.transform({
@@ -254,7 +255,7 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
       var jobSearchObj = search.create({
         type: "job",
         filters: [
-          ["entityid", "contains", project]
+          ["jobname", "contains", project]
         ],
         columns: [
           search.createColumn({
@@ -294,7 +295,7 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
       var customrecordcert_cus_location_mapSearchObj = search.create({
         type: "customrecordcert_cus_location_map",
         filters: [
-          ["custrecord156", "startswith", "OR"]
+          ["custrecord156", "startswith", short]
         ],
         columns: [
           search.createColumn({
