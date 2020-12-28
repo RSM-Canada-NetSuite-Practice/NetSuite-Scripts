@@ -19,12 +19,10 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
 
   function getInputData() {
 
-    function getInputData() {
-      return search.load({
-        id: 'customsearch1349'
-      });
-    }
-
+    var searchObj = search.load({
+      id: 'customsearch1590'
+    });
+    return searchObj;
   }
 
   function map(context) {

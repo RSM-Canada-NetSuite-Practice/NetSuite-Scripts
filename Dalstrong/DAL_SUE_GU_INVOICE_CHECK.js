@@ -26,6 +26,7 @@ define(['N/record', 'N/search', 'N/log'],
 
       log.debug('Invoice: ', invoiceRec);
       log.debug('The ship state is: ', invoiceShipState);
+      log.debug('The length of the ship state is: ', invoiceShipState.length);
 
       if (invoiceShipState == "GU") {
 
@@ -47,6 +48,16 @@ define(['N/record', 'N/search', 'N/log'],
           });
 
           log.debug('The tax code has been set for line: ', i);
+
+          if (invoiceShipState.length > 30) {
+            var newinvoiceShipState = invoiceShipState.substring(0, 30);
+            log.debug('newinvoiceShipState', newinvoiceShipState);
+            record.setValue({
+              fieldId: 'shipstate',
+              value: newinvoiceShipState
+            });
+            log.debug('new ship state set');
+          }
         }
       }
     }

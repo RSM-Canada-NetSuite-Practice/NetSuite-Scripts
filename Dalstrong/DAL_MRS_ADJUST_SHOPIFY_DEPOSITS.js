@@ -114,11 +114,11 @@ define(['N/file', 'N/search', 'N/record', 'N/currency'], function(file, search, 
     }
 
     // One the transaction has been assigned to the deposit, delete the missing transaction
-    record.delete({
-      type: 'customrecord_celigo_shpf_payout_var_tran',
-      id: missingtranid
-    });
-    log.debug('payout variance transaction deleted');
+    // record.delete({
+    //   type: 'customrecord_celigo_shpf_payout_var_tran',
+    //   id: missingtranid
+    // });
+    // log.debug('payout variance transaction deleted');
 
     var cashbackdepositlinecount = deposit.getLineCount({
       sublistId: 'cashback'
