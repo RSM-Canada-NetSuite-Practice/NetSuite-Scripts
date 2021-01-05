@@ -95,6 +95,8 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
     log.debug('job', job);
     var billable = res.values.custrecord_is_billable;
     log.debug('billable', billable);
+    var periodinfo = getLastOpenPeriod();
+    log.debug('periodinfo',periodinfo);
 
     if (billable == 'T') {
 
@@ -311,6 +313,53 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
         return true;
       });
       return locationid;
+    }
+
+    function getLastOpenPeriod() {
+      var accountingperiodSearchObj = search.create({
+        type: "accountingperiod",
+        filters: [
+          ["periodname", "doesnotcontain", "FY"],
+          "AND",
+          ["periodname", "doesnotcontain", "Q"],
+          "AND",
+          ["aplocked", "is", "F"]
+        ],
+        columns: [
+          search.createColumn({
+            name: "internalid",
+            label: "Internal ID"
+          }),
+          search.createColumn({
+            name: "periodname",
+            label: "Name"
+          }),
+          search.createColumn({
+            name: "enddate",
+            sort: search.Sort.ASC,
+            label: "End Date"
+          }),
+          search.createColumn({
+            name: "closed",
+            label: "Closed"
+          })
+        ]
+      });
+
+      periodid = accountingperiodSearchObj[0].getValue({
+        name: 'internalid'
+      });
+      log.debug('periodid', periodid);
+      periodenddate = accountingperiodSearchObj[0].getValue({
+        name: 'enddate'
+      });
+      log.debug('periodenddate', periodenddate);
+
+      return {
+        periodid,
+        periodenddate
+      };
+
     }
   }
 

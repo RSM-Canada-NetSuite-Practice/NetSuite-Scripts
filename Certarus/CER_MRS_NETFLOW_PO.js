@@ -195,7 +195,7 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
 
     // Get the PO date from the netflow custom record
     var proddate = cusrecord.getValue({
-      fieldId: 'custrecord_production_date'
+      fieldId: 'custrecord_invoice_date'
     });
     log.debug('proddate', proddate);
 
