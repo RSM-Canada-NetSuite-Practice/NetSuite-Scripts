@@ -96,38 +96,34 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
     var billable = res.values.custrecord_is_billable;
     log.debug('billable', billable);
     var periodinfo = getLastOpenPeriod();
-    log.debug('periodinfo',periodinfo);
+    log.debug('periodinfo', periodinfo);
 
-    if (billable == 'T') {
+    var jobres = getProjectInformation(job);
+    log.debug('jobres', jobres);
+    var jobid = jobres[0].id;
+    log.debug('jobid', jobid);
 
-      var jobres = getProjectInformation(job);
-      log.debug('jobres', jobres);
-      var jobid = jobres[0].id;
-      log.debug('jobid', jobid);
-
-      var cusid = jobres[0].getValue({
-        name: "internalid",
-        join: "customer",
-      });
-      log.debug('cusid', cusid);
-      var jobdepartment = jobres[0].getValue({
-        name: "custentity_cert_proj_dept"
-      });
-      log.debug('jobdepartment', jobdepartment);
-      var jobclass = jobres[0].getValue({
-        name: "custentity_cert_proj_class"
-      });
-      log.debug('jobclass', jobclass);
-      var jobcustype = jobres[0].getValue({
-        name: "cseg_cert_custype"
-      });
-      log.debug('jobcustype', jobcustype);
-      var joblocationfromjob = jobres[0].getValue({
-        name: "custentitycert_proj_location"
-      });
-      log.debug('joblocationfromjob', joblocationfromjob);
-
-    }
+    var cusid = jobres[0].getValue({
+      name: "internalid",
+      join: "customer",
+    });
+    log.debug('cusid', cusid);
+    var jobdepartment = jobres[0].getValue({
+      name: "custentity_cert_proj_dept"
+    });
+    log.debug('jobdepartment', jobdepartment);
+    var jobclass = jobres[0].getValue({
+      name: "custentity_cert_proj_class"
+    });
+    log.debug('jobclass', jobclass);
+    var jobcustype = jobres[0].getValue({
+      name: "cseg_cert_custype"
+    });
+    log.debug('jobcustype', jobcustype);
+    var joblocationfromjob = jobres[0].getValue({
+      name: "custentitycert_proj_location"
+    });
+    log.debug('joblocationfromjob', joblocationfromjob);
 
     var joblocation = getJobLocation(shortlocation);
     log.debug('joblocation', joblocation);
@@ -147,7 +143,6 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
     });
     log.debug('proddate', proddate);
 
-
     try {
 
       // Create PO
@@ -163,6 +158,7 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
         fieldId: 'trandate',
         value: proddate
       });
+
 
       if (billable == 'T') {
         temppo.setValue({
@@ -205,7 +201,25 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
         sublistId: 'item',
         fieldId: 'customer',
         value: jobid,
-      }).commitLine({
+      });
+
+      if (billable == 'T') {
+      temppo.setCurrentSublistValue({
+          sublistId: 'item',
+          fieldId: 'isbillable',
+          value: true
+        });
+        log.debug('billable flag set', "true");
+      } else {
+        temppo.setCurrentSublistValue({
+            sublistId: 'item',
+            fieldId: 'isbillable',
+            value: false
+          });
+          log.debug('billable flag set', "false");
+      }
+
+      temppo.commitLine({
         sublistId: 'item'
       });
       log.debug('temppo', temppo);
@@ -225,6 +239,15 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
         fieldId: 'trandate',
         value: proddate
       });
+
+      log.debug('proddate | periodinfo.pediodenddate', proddate + " | " + periodinfo.periodenddate + " | " + periodinfo.periodid);
+      if (proddate <= periodinfo.periodenddate) {
+        log.debug('proddate < periodinfo.pediodenddate', proddate + " < " + periodinfo.periodenddate);
+        tempir.setValue({
+          fieldId: 'postingperiod',
+          value: periodinfo.periodid
+        });
+      }
 
       var irid = tempir.save();
 
@@ -345,19 +368,37 @@ define(['N/file', 'N/search', 'N/record', 'N/format'], function(file, search, re
           })
         ]
       });
+      var perioddata = accountingperiodSearchObj.run().getRange(0, 1);
+      log.debug('perioddata', perioddata[0]);
 
-      periodid = accountingperiodSearchObj[0].getValue({
+      periodid = perioddata[0].getValue({
         name: 'internalid'
       });
       log.debug('periodid', periodid);
-      periodenddate = accountingperiodSearchObj[0].getValue({
+      tempperiodenddate = perioddata[0].getValue({
         name: 'enddate'
       });
-      log.debug('periodenddate', periodenddate);
+      log.debug('tempperiodenddate', tempperiodenddate);
+
+      var date = ('0' + (tempperiodenddate.slice(-10)));
+      log.debug('date', date);
+
+      var year = date.substring(6, 10);
+      var month = date.substring(3, 5);
+      var day = date.substring(0, 2);
+
+      var tempdate = year + "-" + month + "-" + day;
+      log.debug('tempdate', tempdate);
+
+      var parsedate = format.parse({
+        value: date,
+        type: format.Type.DATE
+      });
+      log.debug('parsedate', parsedate);
 
       return {
-        periodid,
-        periodenddate
+        periodid: periodid,
+        periodenddate: parsedate
       };
 
     }
